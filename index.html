@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador ERP – 120 Casos · 3 Intentos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #1DB954;
+    --negro: #0D0D0D;
+    --gris-oscuro: #1A1A1A;
+    --gris-medio: #2E2E2E;
+    --blanco: #F8F5F0;
+    --dorado: #C9943A;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--negro); color: var(--blanco); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  header { background: var(--gris-oscuro); border-bottom: 3px solid var(--verde); padding: 1.2rem 2rem; display: flex; align-items: center; gap: 1.5rem; position: sticky; top: 0; z-index: 100; }
+  .logo-badge { background: var(--verde); color: #fff; font-family: 'Playfair Display', serif; font-weight: 900; font-size: 1.1rem; padding: 0.35rem 0.8rem; letter-spacing: 1px; }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; line-height: 1.2; }
+  header h1 span { display: block; font-size: 0.72rem; font-family: 'DM Sans', sans-serif; font-weight: 300; color: #aaa; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .progress-area { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 180px; }
+  .progress-label { font-size: 0.72rem; color: #aaa; letter-spacing: 1px; text-transform: uppercase; }
+  .progress-bar-outer { width: 180px; height: 6px; background: var(--gris-medio); border-radius: 3px; overflow: hidden; }
+  .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--verde), var(--dorado)); border-radius: 3px; transition: width 0.5s ease; }
+  .score-counter { font-size: 0.75rem; color: var(--dorado); font-weight: 600; }
+
+  main { max-width: 860px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
+
+  .dimension-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; padding: 0.28rem 0.75rem; border-radius: 2px; margin-bottom: 1rem; }
+  .dim-planificacion { background: #1A3D6E; color: #8ec6ff; }
+  .dim-gestion       { background: #1A5C3A; color: #7effc1; }
+  .dim-profesional   { background: #3D2800; color: #ffcc70; }
+
+  .question-card { background: var(--gris-oscuro); border: 1px solid #333; border-left: 4px solid var(--verde); border-radius: 4px; padding: 2rem 2.2rem 1.8rem; margin-bottom: 1.8rem; animation: fadeIn 0.35s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .question-number { font-size: 0.7rem; color: var(--verde); font-weight: 600; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 0.6rem; }
+  .question-text { font-size: 1.05rem; line-height: 1.65; }
+  .area-tag { display: inline-block; margin-top: 0.9rem; font-size: 0.65rem; color: #888; letter-spacing: 1px; text-transform: uppercase; border-top: 1px solid #333; padding-top: 0.55rem; width: 100%; }
+
+  .options-grid { display: grid; gap: 0.75rem; margin-bottom: 1.5rem; }
+  .option-btn { background: var(--gris-medio); border: 1.5px solid #3a3a3a; border-radius: 4px; padding: 1rem 1.2rem; text-align: left; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: #d0d0d0; transition: all 0.2s; display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: 0.7rem; }
+  .option-btn:hover:not(:disabled) { border-color: var(--dorado); color: var(--blanco); background: #333; }
+  .option-letter { width: 2rem; height: 2rem; border-radius: 50%; background: #3a3a3a; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; color: #aaa; flex-shrink: 0; transition: all 0.2s; }
+  .option-btn:hover:not(:disabled) .option-letter { background: var(--dorado); color: #000; }
+  .option-btn.correct { border-color: #2ea96a; background: #0a2e1a; color: #7effc1; }
+  .option-btn.correct .option-letter { background: #2ea96a; color: #000; }
+  .option-btn.wrong { border-color: #B45309; background: #1c1000; color: #fbbf24; }
+  .option-btn.wrong .option-letter { background: #B45309; color: #fff; }
+  .option-btn.neutral-disabled { opacity: 0.4; }
+  .option-btn:disabled { cursor: default; }
+  .check-icon { font-size: 1.1rem; }
+
+  .feedback-box { border-radius: 4px; padding: 1.1rem 1.3rem; margin-bottom: 1.5rem; font-size: 0.88rem; line-height: 1.6; display: none; animation: fadeIn 0.3s ease; }
+  .feedback-box.correct-fb { background: #0a2e1a; border: 1px solid #2ea96a; color: #7effc1; display: block; }
+  .feedback-box.wrong-fb   { background: #1c1000; border: 1px solid #B45309; color: #fbbf24; display: block; }
+  .feedback-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 1px; }
+
+  .nav-row { display: flex; align-items: center; gap: 1rem; justify-content: space-between; }
+  .btn-nav { background: none; border: 2px solid #444; color: #aaa; padding: 0.65rem 1.5rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: all 0.2s; }
+  .btn-nav:hover:not(:disabled) { border-color: var(--verde); color: var(--blanco); }
+  .btn-nav:disabled { opacity: 0.3; cursor: default; }
+  .btn-next { border-color: var(--verde); color: var(--blanco); background: var(--verde); }
+  .btn-next:hover:not(:disabled) { background: #17a349; border-color: #17a349; }
+  .q-counter { font-size: 0.8rem; color: #666; text-align: center; flex: 1; }
+
+  #results-screen { display: none; text-align: center; padding: 3rem 1rem; animation: fadeIn 0.5s ease; }
+  .result-badge { font-family: 'Playfair Display', serif; font-size: 5rem; font-weight: 900; color: var(--dorado); line-height: 1; }
+  .result-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 3px; color: #888; margin-top: 0.5rem; margin-bottom: 2rem; }
+  .result-msg { font-size: 1.2rem; font-family: 'Playfair Display', serif; margin-bottom: 0.5rem; }
+  .result-sub { font-size: 0.9rem; color: #999; margin-bottom: 2.5rem; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+  .result-breakdown { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2.5rem; }
+  .rb-item { text-align: center; }
+  .rb-num { font-family: 'Playfair Display', serif; font-size: 2.5rem; font-weight: 700; line-height: 1; }
+  .rb-num.green { color: #2ea96a; } .rb-num.red { color: #f59e0b; }
+  .rb-label { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: #666; margin-top: 4px; }
+  .btn-restart { background: var(--verde); color: #fff; border: none; padding: 0.9rem 2.5rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: background 0.2s; }
+  .btn-restart:hover { background: #17a349; }
+
+  .btn-next-attempt { background: var(--verde); color: #000; border: none; padding: 0.9rem 2rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: background 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+  .btn-next-attempt:hover { background: #17a349; }
+  .btn-reset-all { background: none; color: #888; border: 1.5px solid #555; padding: 0.9rem 2rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+  .btn-reset-all:hover { border-color: var(--dorado); color: var(--dorado); }
+  .btn-pdf { background: none; color: var(--dorado); border: 2px solid var(--dorado); padding: 0.9rem 2rem; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.6rem; }
+  .btn-pdf:hover { background: var(--dorado); color: #000; }
+  .btn-pdf:disabled { opacity: 0.5; cursor: wait; }
+  .results-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; }
+
+  /* ── CRONÓMETRO ── */
+  .timer-area { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0.3rem 0.9rem; background: #111; border: 1px solid #2a2a2a; border-radius: 4px; min-width: 90px; }
+  .timer-label { font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; color: #555; font-weight: 600; }
+  .timer-display { font-family: 'Courier New', monospace; font-size: 1.25rem; font-weight: 700; color: var(--dorado); letter-spacing: 2px; line-height: 1; transition: color 0.4s; }
+  .timer-display.running { color: var(--dorado); }
+  .timer-display.stopped { color: #2ea96a; }
+  .timer-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--dorado); margin-bottom: 1px; animation: pulse 1s infinite; }
+  .timer-dot.stopped { background: #2ea96a; animation: none; }
+  @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.2; } }
+
+  /* Attempt badge in header */
+  .attempt-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--negro); background: var(--verde); padding: 0.2rem 0.6rem; border-radius: 2px; }
+
+  /* ── DESGLOSE POR DIMENSIÓN Y ÁREA ── */
+  .res-analysis { max-width: 680px; margin: 0 auto 2.5rem; text-align: left; }
+  .res-analysis-title {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    color: #666; text-align: center; margin-bottom: 1.4rem;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .res-analysis-title::before, .res-analysis-title::after {
+    content: ''; flex: 1; height: 1px; background: #2a2a2a;
+  }
+
+  .dim-block { margin-bottom: 1.2rem; background: var(--gris-oscuro); border: 1px solid #2a2a2a; border-radius: 4px; overflow: hidden; }
+  .dim-block-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1rem; gap: 1rem;
+  }
+  .dim-block-name { font-size: 0.82rem; font-weight: 600; color: var(--blanco); }
+  .dim-block-stat { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+  .dim-block-pct { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; }
+  .dim-block-fraction { font-size: 0.7rem; color: #666; }
+  .dim-bar-outer { height: 4px; background: #222; margin: 0 1rem 0.8rem; border-radius: 2px; }
+  .dim-bar-inner { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+  .area-rows { padding: 0 1rem 0.8rem; display: grid; gap: 0.45rem; }
+  .area-row { display: flex; align-items: center; gap: 0.7rem; }
+  .area-row-label { font-size: 0.73rem; color: #999; flex: 1; line-height: 1.35; }
+  .area-row-bar-outer { width: 90px; height: 5px; background: #222; border-radius: 3px; flex-shrink: 0; }
+  .area-row-bar-inner { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .area-row-score { font-size: 0.68rem; font-weight: 600; min-width: 2.8rem; text-align: right; flex-shrink: 0; }
+
+  .pct-green  { color: #2ea96a; } .bar-green  { background: #2ea96a; }
+  .pct-yellow { color: #C9943A; } .bar-yellow { background: #C9943A; }
+  .pct-red    { color: #f59e0b; } .bar-red    { background: #f59e0b; }
+
+  .res-priority { max-width: 680px; margin: 0 auto 2rem; }
+  .res-priority-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #666; text-align: center; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.8rem; }
+  .res-priority-title::before, .res-priority-title::after { content: ''; flex: 1; height: 1px; background: #2a2a2a; }
+  .priority-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+  .priority-chip { font-size: 0.72rem; padding: 0.3rem 0.75rem; border-radius: 2px; border: 1px solid #B45309; background: #1c1000; color: #fbbf24; }
+  .priority-chip.ok { border-color: #1a5c3a; background: #0a2e1a; color: #7effc1; }
+
+  #intro-screen { text-align: center; padding: 3rem 1rem; animation: fadeIn 0.5s ease; }
+  #intro-screen h2 { font-family: 'Playfair Display', serif; font-size: 2.4rem; line-height: 1.2; margin-bottom: 1rem; }
+  #intro-screen h2 span { color: var(--verde); }
+  #intro-screen p { color: #aaa; font-size: 0.95rem; line-height: 1.7; max-width: 560px; margin: 0 auto 2rem; }
+  .intro-sustento { font-size: 0.8rem !important; color: #666 !important; border-top: 1px solid #2a2a2a; border-bottom: 1px solid #2a2a2a; padding: 0.9rem 1.2rem !important; max-width: 620px !important; line-height: 1.65 !important; margin: -0.5rem auto 2rem !important; text-align: left !important; }
+  .intro-sustento em { color: #888; font-style: normal; font-weight: 500; }
+  .intro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; max-width: 700px; margin: 0 auto 2.5rem; }
+  .intro-card { background: var(--gris-oscuro); border: 1px solid #333; border-radius: 4px; padding: 1.2rem 1rem; text-align: left; }
+  .intro-card-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--verde); line-height: 1; }
+  .intro-card-label { font-size: 0.75rem; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-top: 0.3rem; line-height: 1.4; }
+  .btn-start { background: var(--verde); color: #fff; border: none; padding: 1rem 3rem; font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: background 0.2s; }
+  .btn-start:hover { background: #17a349; }
+
+  /* ── INTRO CARDS DESPLEGABLES ── */
+  .intro-card { cursor: pointer; user-select: none; transition: border-color 0.2s, background 0.2s; }
+  .intro-card:hover { border-color: #555; background: #222; }
+  .intro-card.has-dropdown { position: relative; }
+  .intro-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .intro-card-arrow { font-size: 0.7rem; color: var(--verde); margin-top: 0.2rem; transition: transform 0.3s ease; flex-shrink: 0; line-height: 1; }
+  .intro-card.open .intro-card-arrow { transform: rotate(180deg); }
+
+  .intro-dropdown {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    opacity: 0;
+    margin-top: 0;
+  }
+  .intro-card.open .intro-dropdown {
+    max-height: 600px;
+    opacity: 1;
+    margin-top: 0.9rem;
+  }
+  .intro-dropdown-inner {
+    border-top: 1px solid #3a3a3a;
+    padding-top: 0.8rem;
+    text-align: left;
+  }
+  .dropdown-section { margin-bottom: 0.75rem; }
+  .dropdown-section:last-child { margin-bottom: 0; }
+  .dropdown-section-title {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--verde);
+    margin-bottom: 0.4rem;
+  }
+  .dropdown-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: #ccc;
+    line-height: 1.45;
+    margin-bottom: 0.3rem;
+  }
+  .dropdown-item:last-child { margin-bottom: 0; }
+  .dropdown-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--dorado);
+    flex-shrink: 0;
+    margin-top: 0.35rem;
+  }
+  .dropdown-num {
+    font-size: 0.65rem; font-weight: 700;
+    color: var(--dorado);
+    min-width: 1.3rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+
+  @media (max-width: 600px) {
+    header { flex-wrap: wrap; gap: 0.8rem; }
+    .progress-area { margin-left: 0; width: 100%; }
+    .progress-bar-outer { width: 100%; }
+    .question-card { padding: 1.4rem 1.2rem; }
+    .nav-row { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-badge">ERP</div>
+  <h1>Simulador de Práctica
+    <span>Ejercicio de Rendimiento Profesional · 120 Casos · 3 Intentos</span>
+  </h1>
+  <span class="attempt-badge" id="attempt-badge" style="display:none;">Intento 1 de 3</span>
+  <div class="progress-area">
+    <span class="progress-label">Progreso</span>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar" style="width:0%"></div></div>
+    <span class="score-counter" id="score-counter">0 / 40 respondidas</span>
+  </div>
+  <div class="timer-area" id="timer-area">
+    <span class="timer-label"><span class="timer-dot" id="timer-dot"></span> Tiempo</span>
+    <span class="timer-display" id="timer-display">00:00:00</span>
+  </div>
+</header>
+
+<main>
+  <div id="intro-screen">
+    <h2>Practica para la prueba <span>ERP 2025</span></h2>
+    <p>Este simulador contiene <strong>120 casos reales</strong> divididos en <strong>3 intentos de 40 casos</strong> cada uno. En cada intento recibirás casos distintos del banco total. Al finalizar un intento podrás continuar con el siguiente. Las opciones se presentan en orden aleatorio en cada intento.</p>
+    <p class="intro-sustento">Esta práctica está sustentada en los documentos: <em>Componente Académico Modalidad Técnico Profesional y Modalidad en Artes</em>, <em>Estándares Profesionales y del Desempeño para la Certificación y Desarrollo de la Carrera Docente</em>, <em>Código para el Sistema de Protección y los Derechos Fundamentales de Niños, Niñas y Adolescentes (Ley 136-03)</em> y <em>Código de Ética del Docente (OD 22/2023)</em>.</p>
+    <div class="intro-grid">
+
+      <!-- Card 1: 120 casos -->
+      <div class="intro-card">
+        <div class="intro-card-num">120</div>
+        <div class="intro-card-label">Casos en el banco</div>
+      </div>
+      <!-- Card intentos -->
+      <div class="intro-card">
+        <div class="intro-card-num">3 × 40</div>
+        <div class="intro-card-label">Intentos de 40 casos</div>
+      </div>
+
+      <!-- Card 2: 4 Dimensiones (desplegable) -->
+      <div class="intro-card has-dropdown" onclick="toggleCard(this)">
+        <div class="intro-card-header">
+          <div>
+            <div class="intro-card-num">4</div>
+            <div class="intro-card-label">Dimensiones evaluadas</div>
+          </div>
+          <span class="intro-card-arrow">▼</span>
+        </div>
+        <div class="intro-dropdown">
+          <div class="intro-dropdown-inner">
+            <div class="dropdown-section">
+              <div class="dropdown-section-title">Dimensiones</div>
+              <div class="dropdown-item"><span class="dropdown-dot"></span><span>El estudiante y su aprendizaje</span></div>
+              <div class="dropdown-item"><span class="dropdown-dot"></span><span>Contenido curricular</span></div>
+              <div class="dropdown-item"><span class="dropdown-dot"></span><span>Proceso de enseñanza y aprendizaje</span></div>
+              <div class="dropdown-item"><span class="dropdown-dot"></span><span>Compromiso personal y profesional</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: 8 Áreas (desplegable) -->
+      <div class="intro-card has-dropdown" onclick="toggleCard(this)">
+        <div class="intro-card-header">
+          <div>
+            <div class="intro-card-num">8</div>
+            <div class="intro-card-label">Áreas de desempeño</div>
+          </div>
+          <span class="intro-card-arrow">▼</span>
+        </div>
+        <div class="intro-dropdown">
+          <div class="intro-dropdown-inner">
+            <div class="dropdown-section">
+              <div class="dropdown-section-title">Áreas evaluadas</div>
+              <div class="dropdown-item"><span class="dropdown-num">1.</span><span>Nivel de formación académica</span></div>
+              <div class="dropdown-item"><span class="dropdown-num">2.</span><span>Aplicación del currículo</span></div>
+              <div class="dropdown-item"><span class="dropdown-num">3.</span><span>Resultados de aprendizaje de los estudiantes</span></div>
+              <div class="dropdown-item"><span class="dropdown-num">4.</span><span>Cumplimiento de normas institucionales</span></div>
+              <div class="dropdown-item"><span class="dropdown-num">5.</span><span>Relaciones con estudiantes, colegas y comunidad</span></div>
+              <div class="dropdown-item"><span class="dropdown-num">6.</span><span>Liderazgo en el trabajo</span></div>
+              <div class="dropdown-item"><span class="dropdown-num">7.</span><span>Formación continua</span></div>
+              <div class="dropdown-item"><span class="dropdown-num">8.</span><span>Trabajo en equipo</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: aleatorio -->
+      <div class="intro-card">
+        <div class="intro-card-num">✓</div>
+        <div class="intro-card-label">Posición aleatoria de respuestas</div>
+      </div>
+
+    </div>
+    <button class="btn-start" onclick="startQuiz()">Iniciar Simulador</button>
+  </div>
+
+  <div id="quiz-screen" style="display:none">
+    <div class="question-card" id="question-card">
+      <div class="question-number" id="q-number">CASO 1 DE 50</div>
+      <span class="dimension-tag" id="dim-tag"></span>
+      <p class="question-text" id="q-text"></p>
+      <span class="area-tag" id="area-tag"></span>
+    </div>
+    <div class="options-grid" id="options-grid"></div>
+    <div class="feedback-box" id="feedback-box">
+      <div class="feedback-title" id="feedback-title"></div>
+      <div id="feedback-text"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn-nav" id="btn-prev" onclick="prevQuestion()">&#8592; Anterior</button>
+      <span class="q-counter" id="q-counter">1 / 50</span>
+      <button class="btn-nav btn-next" id="btn-next" onclick="nextQuestion()">Siguiente &#8594;</button>
+    </div>
+  </div>
+
+  <div id="results-screen">
+    <div class="result-badge" id="res-score"></div>
+    <div class="result-label">Puntuación Final</div>
+    <div style="font-size:0.75rem;color:var(--dorado);letter-spacing:2px;text-transform:uppercase;margin-bottom:0.5rem;" id="res-attempt"></div>
+    <div class="result-msg" id="res-msg"></div>
+    <div class="result-sub" id="res-sub"></div>
+    <div class="result-breakdown">
+      <div class="rb-item"><div class="rb-num green" id="res-correct"></div><div class="rb-label">Correctas</div></div>
+      <div class="rb-item"><div class="rb-num red"   id="res-wrong"></div><div class="rb-label">Incorrectas</div></div>
+      <div class="rb-item">
+        <div class="rb-num" id="res-time" style="font-size:1.8rem;color:var(--dorado);letter-spacing:2px;font-family:'Courier New',monospace;">--:--:--</div>
+        <div class="rb-label">Tiempo total</div>
+      </div>
+    </div>
+
+    <!-- Desglose por dimensión y área -->
+    <div class="res-analysis">
+      <div class="res-analysis-title">Desglose por Dimensión y Área</div>
+      <div id="dim-breakdown"></div>
+    </div>
+
+    <!-- Áreas prioritarias -->
+    <div class="res-priority">
+      <div class="res-priority-title">Áreas que necesitan refuerzo</div>
+      <div class="priority-chips" id="priority-chips"></div>
+    </div>
+
+    <div class="results-actions">
+      <button class="btn-next-attempt" id="btn-next-attempt" onclick="nextAttempt()" style="display:none;">▶ Iniciar Intento 2</button>
+      <button class="btn-pdf" id="btn-pdf" onclick="generarPDF()">⬇ Descargar Informe PDF</button>
+      <button class="btn-reset-all" id="btn-reset-all" onclick="resetAll()" style="display:none;">↺ Empezar desde cero</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  BANCO DE 120 PREGUNTAS – ALTA DIFICULTAD
+//  Opciones casi idénticas; diferencia en matiz normativo.
+// ═══════════════════════════════════════════════════════
+const rawQuestions = [
+
+// ══ BLOQUE 1: PLANIFICACIÓN PEDAGÓGICA (Q1–Q40) ════════
+
+  // ─ Aplicación del currículo ─
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente Luisa redacta el resultado de aprendizaje de la unidad de Bases de Datos. ¿Cuál formulación responde plenamente al enfoque por competencias del currículo dominicano?",
+   options:["El estudiante identificará los tipos de bases de datos relacionales vistos durante la unidad.","El estudiante diseñará y normalizará bases de datos para resolver necesidades reales del sector informático.","El estudiante describirá los pasos de normalización aplicando las formas normales trabajadas en clase.","El estudiante reconocerá los conceptos fundamentales de diseño de bases de datos del módulo."],correct:1,
+   feedback:"Solo 'diseñará y normalizará para resolver necesidades reales del sector' combina los tres elementos del resultado por competencias: verbo de actuación compleja, objeto técnico específico y contexto auténtico externo al aula. Los verbos identificar, describir y reconocer son de nivel cognitivo inferior y no evidencian competencia profesional."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"Al planificar el módulo de Análisis de Reportes, la docente quiere que la identidad corporativa de una empresa real sea el eje integrador. ¿Qué componente cumple específicamente esa función articuladora?",
+   options:["El propósito de la unidad, porque orienta al docente sobre la intención pedagógica y el para qué.","Los indicadores de logro, porque delimitan el nivel de desempeño esperado en la competencia.","La situación de aprendizaje, porque contextualiza todos los elementos curriculares en un escenario real del sector.","Los contenidos procedimentales, porque permiten operacionalizar la identidad corporativa en actividades."],correct:2,
+   feedback:"El propósito orienta pero no articula. Los indicadores miden pero no contextualizan. Los contenidos procedimentales operacionalizan pero no integran. Solo la situación de aprendizaje es el componente diseñado para articular competencias, contenidos y evaluación desde un contexto real del sector productivo."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El módulo técnico de Desarrollo de Aplicaciones articula tres competencias específicas con dos Competencias Fundamentales. ¿Cómo debe reflejarse esto en la planificación anual?",
+   options:["Mencionando las Fundamentales en la presentación general del módulo como marco de referencia.","Incorporando las Fundamentales solo en las unidades donde el contenido técnico las active de forma natural.","Articulando explícitamente las competencias específicas y las Fundamentales en cada unidad de aprendizaje.","Asignando una unidad dedicada al desarrollo de las Competencias Fundamentales al inicio del módulo."],correct:2,
+   feedback:"Mencionarlas en la presentación es insuficiente. Incluirlas solo donde 'aparecen naturalmente' no garantiza su desarrollo. Dedicarles una unidad separada viola el principio de transversalidad. El currículo dominicano exige articulación explícita en cada unidad, evidenciando el desarrollo continuo e integrado."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Electricidad planifica una práctica en una empresa del sector. Según el Art. 12a del Código de Ética, ¿cuál condición es indispensable además de la autorización del Equipo de Gestión?",
+   options:["Contar con al menos un docente adicional que acompañe la actividad fuera del centro.","Entregar al Equipo de Gestión una evaluación escrita de la actividad una vez finalizada.","Obtener autorización escrita de los padres o tutores a partir del programa detallado de la actividad.","Especificar en el programa los objetivos, el lugar, el tiempo y la cantidad de participantes."],correct:2,
+   feedback:"El Art. 12a establece que ambas autorizaciones —Equipo de Gestión Y padres/tutores— son igualmente obligatorias y deben obtenerse a partir del programa detallado. La evaluación posterior y el docente adicional también son exigencias del artículo, pero la autorización de padres es la condición que protege directamente los derechos del estudiante y no puede omitirse."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente Carmen detecta ritmos de aprendizaje muy diferentes en su grupo de Programación. ¿Cuál ajuste al planificar responde mejor al principio de atención a la diversidad?",
+   options:["Planificar actividades con niveles de complejidad diferenciados que permitan a todos alcanzar los mismos resultados.","Planificar actividades diferenciadas por grupos según el nivel inicial detectado en el diagnóstico.","Planificar momentos de refuerzo fuera del horario regular para los estudiantes con más dificultades.","Planificar ritmos de avance distintos para cada estudiante permitiendo que llegue al resultado a su propio tiempo."],correct:0,
+   feedback:"La diferenciación por grupos crea etiquetas. El refuerzo fuera de horario segrega. Los ritmos totalmente individuales son inviables grupalmente. La opción correcta mantiene los mismos resultados para todos —principio de igualdad de logro— diferenciando solo el camino para llegar, que es la esencia de la atención a la diversidad."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El docente técnico de Mecatrónica incorpora el Eje Transversal de Medioambiente. ¿Cuál estrategia lo integra de forma genuinamente transversal?",
+   options:["Dedicar una clase al inicio del módulo para sensibilizar al grupo sobre el impacto ambiental de la mecatrónica.","Incorporar el análisis del impacto ambiental como criterio de evaluación en todos los proyectos y prácticas del módulo.","Incluir en la bibliografía textos sobre tecnología verde aplicada a la mecatrónica industrial.","Agregar una actividad trimestral sobre reciclaje de componentes electrónicos al cierre de cada unidad."],correct:1,
+   feedback:"Una clase inicial, la bibliografía y una actividad trimestral tratan el eje como tema puntual. Solo convertirlo en criterio de evaluación en todos los proyectos lo hace genuinamente transversal: atraviesa el módulo de forma continua e integrada, que es la definición curricular de transversalidad."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La coordinadora pide un proyecto integrador que vincule tres módulos técnicos con las Competencias Fundamentales. ¿Cuál principio curricular fundamenta principalmente esta solicitud?",
+   options:["El principio de pertinencia, que exige vincular los aprendizajes con el contexto productivo y social del estudiante.","El principio de integración, que establece que las Competencias Fundamentales son transversales a todos los módulos.","El principio de coherencia, que exige que todos los módulos compartan los mismos ejes temáticos del grado.","El principio de progresión, que ordena los aprendizajes de menor a mayor complejidad entre módulos."],correct:1,
+   feedback:"La pertinencia refiere al vínculo con el contexto externo. La coherencia refiere a la consistencia estructural interna. La progresión ordena la secuencia de aprendizajes. Solo el principio de integración establece explícitamente que las Competencias Fundamentales son transversales a todos los módulos, fundamentando directamente la solicitud de vincularlos."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"Al elaborar la planificación anual, la docente incluye solo contenidos declarativos. El coordinador le señala que está incompleta. ¿Qué le falta según el diseño curricular por competencias?",
+   options:["Los contenidos actitudinales, que reflejan los valores que los estudiantes deben desarrollar en el módulo.","Los contenidos procedimentales, que son los más importantes en un módulo técnico profesional.","Los contenidos procedimentales y actitudinales, ya que el enfoque requiere los tres tipos articulados entre sí.","Los objetivos de aprendizaje, que permiten derivar los demás tipos de contenidos faltantes."],correct:2,
+   feedback:"Afirmar que solo faltan los actitudinales o solo los procedimentales es parcialmente correcto pero incompleto. El enfoque por competencias exige los tres tipos de contenidos articulados simultáneamente porque la competencia integra el saber, el saber hacer y el saber ser —no por separado ni por prioridad."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El docente de Redes detecta que el currículo oficial no contempla una tecnología WiFi reciente esencial para el sector. ¿Cuál es la acción pedagógicamente más pertinente?",
+   options:["Sustituir un tema del currículo oficial por el de la nueva tecnología, actualizando los resultados de aprendizaje.","Incorporarla como recurso didáctico contextualizado al servicio de los resultados de aprendizaje oficiales, documentándolo.","Solicitar autorización al Distrito Educativo antes de incluir cualquier contenido no contemplado oficialmente.","Esperar que el MINERD actualice el currículo antes de abordar tecnologías no contempladas en el documento."],correct:1,
+   feedback:"Sustituir contenido oficial excede la autonomía docente. Solicitar aval distrital no es requerido para recursos didácticos. Esperar la actualización priva a los estudiantes de contenido relevante del sector. La acción correcta usa la tecnología al servicio —no en lugar— de los resultados oficiales, con documentación transparente en la planificación."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Diseño Gráfico quiere articular el módulo con la Competencia de Comunicación. ¿En qué componente de la planificación se evidencia mejor esa articulación?",
+   options:["En los contenidos del módulo, añadiendo un apartado sobre comunicación visual como eje temático adicional.","En las estrategias de aprendizaje, diseñando actividades donde diseñar implique comunicar mensajes con propósito real.","En la bibliografía, incluyendo textos sobre teoría de la comunicación aplicada al diseño gráfico.","En el propósito del módulo, mencionando explícitamente la Competencia de Comunicación como meta general."],correct:1,
+   feedback:"El contenido adicional, la bibliografía y el propósito son componentes declarativos que no garantizan el desarrollo de la competencia. Las competencias fundamentales se desarrollan a través de las estrategias de aprendizaje —que son las que concretan cómo el estudiante actúa comunicando mientras aprende diseño."
+  },
+
+  // ─ Resultados de aprendizaje ─
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente Pedro constata al final del trimestre que el grupo no alcanzó los resultados esperados en diseño de bases de datos. ¿Cuál es la decisión más pertinente para la planificación siguiente?",
+   options:["Incorporar actividades de refuerzo al inicio del próximo trimestre antes de los nuevos contenidos.","Replantear las estrategias didácticas e instrumentos de evaluación e integrar el refuerzo en la nueva planificación.","Dedicar las primeras semanas del próximo trimestre exclusivamente al repaso de los contenidos no logrados.","Registrar los resultados no logrados en el expediente y retomar esos contenidos cuando el currículo lo permita."],correct:1,
+   feedback:"Incorporar refuerzo puntual no implica replanteamiento real. Semanas exclusivas de repaso retrasan el cronograma sin mejorar la metodología. Registrar y esperar es omisión. La opción correcta integra los dos elementos que los Estándares exigen: replanteamiento metodológico real y continuidad del proceso dentro de la planificación formal."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 3: Resultados de aprendizaje",
+   text:"Al iniciar el año, la docente aplica evaluación diagnóstica en su módulo. Un colega le pregunta para qué usa los resultados. ¿Cuál es el uso pedagógicamente más pertinente?",
+   options:["Para ajustar las estrategias, el ritmo y los énfasis de la planificación en función del punto de partida real del grupo.","Para identificar a los estudiantes con dificultades y organizar grupos de nivelación previos al inicio del módulo.","Para informar a los padres sobre el nivel de entrada de sus hijos y acordar compromisos de apoyo.","Para determinar si el grupo tiene bases mínimas para iniciar o si requiere un período de preparación previo."],correct:0,
+   feedback:"Identificar estudiantes para nivelación puede generar etiquetas. Informar a padres no es el uso pedagógico primario. Determinar bases mínimas puede llevar a decisiones de exclusión. El único uso que respeta el propósito curricular es ajustar la planificación del docente —sin que los resultados se conviertan en calificaciones ni comunicaciones externas prematuras."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente Ramón verifica que el 80% del grupo logró los resultados de aprendizaje del módulo de Redes. ¿Qué debe hacer con el 20% que no los alcanzó?",
+   options:["Registrar los resultados no logrados para que sean retomados en el módulo siguiente del año escolar.","Extender el período de evaluación sumativa para dar una oportunidad adicional de demostrar el logro.","Analizar por qué no se lograron, diseñar actividades de refuerzo específicas y verificar el logro antes de avanzar.","Informar a los padres de ese 20% para acordar estrategias de apoyo desde el hogar."],correct:2,
+   feedback:"Registrar y pasar al módulo siguiente abandona pedagógicamente al 20%. Extender solo el período sin cambio metodológico repite lo que no funcionó. Informar a padres puede ser complementario pero no es la acción pedagógica principal. El enfoque por competencias exige que el docente analice, diseñe refuerzo específico y verifique —responsabilidad que no puede delegarse ni postergarse."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente desea incorporar la evaluación diagnóstica de forma que sea realmente útil para su planificación. ¿Cuál práctica es más efectiva?",
+   options:["Aplicarla en la primera semana y registrar los resultados en el expediente de cada estudiante.","Aplicarla, analizar resultados grupales e individuales y ajustar la secuencia, ritmo y estrategias antes de la primera unidad.","Aplicarla y comunicar los resultados a los padres para que apoyen en los conocimientos previos deficientes.","Aplicarla y compartir los resultados con los estudiantes para que identifiquen sus fortalezas y debilidades."],correct:1,
+   feedback:"Registrar en el expediente es administrativo, no pedagógico. Comunicar a padres o a estudiantes puede ser complementario. La evaluación diagnóstica solo cumple su propósito cuando sus resultados modifican concretamente la planificación antes de comenzar —no después de haberla hecho de forma independiente."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 3: Resultados de aprendizaje",
+   text:"Al finalizar el año, el docente técnico debe participar en la Rendición de Cuentas sobre resultados de aprendizaje. ¿Qué información es más relevante incluir?",
+   options:["El porcentaje de estudiantes aprobados y reprobados en cada período del año escolar.","Las calificaciones individuales organizadas por período y por módulo técnico.","El análisis de resultados logrados y no logrados, estrategias utilizadas y ajustes realizados durante el año.","Las actividades realizadas con fechas de ejecución y recursos utilizados en cada unidad."],correct:2,
+   feedback:"Las calificaciones y el porcentaje de aprobados son datos cuantitativos que no explican el proceso pedagógico. El listado de actividades describe lo hecho pero no lo que se logró. La Rendición de Cuentas pedagógica competente analiza qué resultados se lograron y cuáles no, por qué, qué estrategias se usaron y qué ajustes se realizaron —que es lo que el Art. 13h del Código de Ética exige."
+  },
+
+  // ─ Formación académica y planificación ─
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 1: Nivel de formación académica",
+   text:"Un docente técnico tiene título de Técnico Superior pero sin formación pedagógica formal. Al elaborar su planificación, ¿qué implicación tiene esto según los Estándares Profesionales del MINERD?",
+   options:["Debe elaborar la planificación con apoyo permanente del coordinador hasta obtener la certificación docente.","La planificación es válida si los resultados de aprendizaje son técnicamente correctos aunque no sigan el formato oficial.","Tiene la obligación de actualizar su formación pedagógica de forma continua para mejorar la calidad de su práctica.","El centro debe asignarle un tutor pedagógico que valide sus planificaciones antes de implementarlas."],correct:2,
+   feedback:"El apoyo del coordinador o tutor valida externamente pero no resuelve el déficit formativo. La corrección técnica sin competencia pedagógica no garantiza aprendizaje. Los Estándares Profesionales establecen que la formación continua —incluyendo la pedagógica— es obligación personal del docente, intransferible a otros."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente recibe un módulo que no ha impartido antes. ¿Cuál es el primer paso que debe dar según los Estándares Profesionales del MINERD?",
+   options:["Buscar materiales didácticos y tutoriales en línea sobre los contenidos del módulo para preparar las clases.","Consultar con un colega que haya impartido el módulo para obtener su planificación y adaptarla.","Analizar el documento curricular del módulo: resultados de aprendizaje, competencias e indicadores de logro.","Aplicar una evaluación diagnóstica al grupo para determinar qué saben y desde dónde iniciar la planificación."],correct:2,
+   feedback:"Los materiales en línea y la planificación de un colega son recursos secundarios. La evaluación diagnóstica es importante pero no puede diseñarse sin conocer antes qué resultados persigue el módulo. El primer paso indispensable es analizar el documento curricular oficial —base sobre la que se construye todo lo demás."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente distingue entre estrategias de evaluación e instrumentos de evaluación. ¿Cuál distinción es correcta según el marco curricular dominicano?",
+   options:["La estrategia es el tipo de actividad evaluativa y el instrumento es el formato de calificación numérica.","La estrategia define cuándo se evalúa y el instrumento define qué se evalúa (conocimiento, habilidad, actitud).","La estrategia es la situación para recoger evidencias y el instrumento es la herramienta con criterios para valorarlas.","La estrategia es la técnica elegida por el docente y el instrumento es el documento que certifica el resultado."],correct:2,
+   feedback:"Confundir estrategia con tipo de actividad o con el momento evaluativo, e instrumento con formato de calificación, son errores frecuentes. La distinción correcta: estrategia = situación diseñada para recoger evidencias (exposición, práctica, proyecto); instrumento = herramienta con criterios explícitos que valora esas evidencias de forma objetiva (rúbrica, lista de cotejo, escala de valoración)."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Diseño de Modas tiene cuatro grupos del mismo módulo con perfiles de entrada distintos. ¿Cuál es la práctica de planificación más sólida?",
+   options:["Elaborar cuatro planificaciones distintas adaptando los resultados de aprendizaje a cada perfil de grupo.","Elaborar una planificación común con los mismos resultados y estrategias diferenciadas por grupo según diagnóstico.","Elaborar una planificación básica común y ampliarla individualmente para cada grupo cuando sea necesario.","Usar la planificación del año anterior y ajustarla de forma espontánea según las necesidades detectadas en aula."],correct:1,
+   feedback:"Resultados distintos por grupo bajan el estándar para algunos. La planificación básica ampliada 'cuando sea necesario' no garantiza diferenciación sistemática. Ajustar sobre la marcha es improvisación. La opción correcta mantiene igualdad de estándar (mismos resultados) con diferenciación real mediante estrategias específicas para cada grupo según su diagnóstico."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La planificación del docente de Fotografía muestra actividades sin conexión visible con situaciones del sector productivo. ¿Cuál es la observación más pertinente del coordinador?",
+   options:["Que debe incorporar visitas a estudios fotográficos o fotógrafos invitados para contextualizar los contenidos.","Que el Componente Académico Técnico Profesional exige situaciones de aprendizaje contextualizadas en el sector.","Que las actividades deben incluir referencias de fotógrafos reconocidos para validar su pertinencia técnica.","Que el módulo debe incorporar proyectos con clientes reales al cierre del trimestre para vincular teoría y práctica."],correct:1,
+   feedback:"Las visitas y los proyectos finales son estrategias puntuales, no solución estructural. Las referencias bibliográficas no sustituyen el contexto productivo. La observación pertinente apunta al principio curricular: el Componente Técnico Profesional exige que las situaciones estén contextualizadas en el sector desde el inicio, no solo al cierre."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Turismo quiere que los estudiantes aprendan a elaborar itinerarios. ¿Cuál situación de aprendizaje es más pertinente como eje integrador de la unidad?",
+   options:["Resolver casos hipotéticos de viajeros con distintos presupuestos y preferencias diseñados por la docente.","Elaborar el itinerario real de una excursión escolar del centro, gestionando proveedores y presupuesto reales.","Analizar itinerarios de agencias reales para identificar sus componentes y estructura profesional.","Hacer una presentación sobre los destinos turísticos más visitados de la República Dominicana."],correct:1,
+   feedback:"Los casos hipotéticos, el análisis de itinerarios y la presentación son actividades de aprendizaje, no situaciones de aprendizaje integradoras. Solo elaborar el itinerario de una excursión real contextualiza todos los contenidos en el sector productivo, da sentido auténtico al aprendizaje y cumple la función articuladora que define la situación de aprendizaje."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente planifica un proyecto grupal en el módulo de Programación Web. Al diseñar la evaluación, ¿qué debe asegurarse según el enfoque por competencias?",
+   options:["Que todos los miembros reciban la misma calificación para fomentar la responsabilidad colectiva del equipo.","Que la evaluación incluya la valoración del producto grupal y el desempeño individual de cada integrante.","Que cada estudiante evalúe a sus compañeros mediante coevaluación para garantizar justicia en la nota.","Que el grupo entregue un informe de distribución del trabajo para que el docente califique por separado."],correct:1,
+   feedback:"Calificación idéntica no diferencia aportes reales. La coevaluación sola puede estar sesgada. El informe de distribución describe quién hizo qué pero no evidencia competencia. El enfoque por competencias exige evaluar tanto el producto grupal como el desempeño individual con instrumentos diferenciados para cada dimensión."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Contabilidad quiere evaluar si los estudiantes dominan la elaboración de estados financieros. ¿Cuál instrumento es el más alineado con ese resultado de aprendizaje?",
+   options:["Una prueba escrita con preguntas abiertas sobre los tipos de estados financieros y su importancia.","Una rúbrica de desempeño aplicada mientras los estudiantes elaboran el estado financiero de una empresa real.","Un portafolio donde los estudiantes recopilen evidencias de las actividades del trimestre.","Una escala de valoración de actitudes que mida la disposición durante las prácticas contables."],correct:1,
+   feedback:"La prueba escrita evalúa el conocimiento sobre estados financieros, no su elaboración. El portafolio recoge evidencias del proceso pero no evalúa directamente el desempeño técnico. La escala de actitudes evalúa el saber ser, no el saber hacer. Solo la rúbrica durante la ejecución real evalúa directamente lo que el resultado exige: 'elaborar', un verbo de desempeño que requiere observación en acción."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Hotelería incluye el eje transversal de Género en su módulo. ¿Cuál estrategia lo integra de forma más coherente con los principios curriculares?",
+   options:["Incluir en los proyectos del módulo la reflexión sobre inequidades de género en la industria hotelera usando casos de estudio con protagonistas de distintos géneros.","Dedicar una clase al inicio para sensibilizar al grupo sobre la equidad de género en el campo hotelero.","Agregar en la planificación una actividad trimestral relacionada con el rol de la mujer en el turismo.","Incorporar la perspectiva de género en los criterios de evaluación asignando puntos por mencionarla."],correct:0,
+   feedback:"Una clase inicial o una actividad trimestral hacen del eje un tema puntual, no transversal. Asignar puntos por mencionarlo distorsiona la evaluación. Solo la integración continua en proyectos del módulo con representación diversa a lo largo del año responde al principio de transversalidad que el currículo dominicano exige para todos los ejes."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El docente técnico de Mecánica nota que la planificación tiene actividades bien descritas pero sin instrumentos de evaluación asociados. ¿Qué elemento esencial falta?",
+   options:["La descripción de los momentos didácticos de cada actividad (inicio, desarrollo, cierre).","Los criterios e instrumentos de evaluación alineados a los indicadores de logro de cada actividad.","La estimación del tiempo de duración de cada actividad planificada para la semana.","La vinculación explícita de cada actividad con el eje transversal correspondiente del currículo."],correct:1,
+   feedback:"Los momentos didácticos, el tiempo y los ejes transversales son componentes valiosos pero complementarios. Solo los criterios e instrumentos de evaluación alineados a indicadores de logro hacen verificable si se alcanzaron los resultados de aprendizaje. Sin ellos, la planificación no es evaluable ni permite retroalimentación objetiva."
+  },
+
+// ══ BLOQUE 2: GESTIÓN DEL APRENDIZAJE (Q41–Q80) ════════
+
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"Durante una práctica de laboratorio de Bases de Datos, el docente observa que la mayoría del grupo repite el mismo error al aplicar relaciones entre tablas. ¿Cuál acción es la más pertinente en ese momento?",
+   options:["Dejar que terminen la práctica, identificar errores en la corrección y devolverlos en la próxima clase.","Detener la práctica, realizar una intervención breve con el grupo completo para aclarar el concepto y retomar.","Acercarse individualmente a cada estudiante para corregir el error sin interrumpir el flujo general.","Ampliar el tiempo de la práctica para que los estudiantes identifiquen y corrijan el error de forma autónoma."],correct:1,
+   feedback:"Corregir en la próxima clase pierde el momento de aprendizaje en contexto. La intervención individual cuando el error es generalizado es ineficiente. Ampliar el tiempo sin intervención deja a los estudiantes practicando el error. Cuando el error es colectivo, la intervención grupal breve es la respuesta más eficiente: clarifica para todos simultáneamente y permite retomar con comprensión correcta."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Análisis de Sistemas quiere que sus estudiantes desarrollen la competencia de documentar sistemas. ¿Cuál estrategia la desarrolla mejor?",
+   options:["Presentar ejemplos de documentación técnica profesional y pedir que los analicen y critiquen en detalle.","Enseñar los estándares de documentación y pedir que practiquen documentando sistemas diseñados por la docente.","Proporcionar plantillas profesionales y pedir que las completen durante las prácticas de laboratorio.","Asignar la documentación completa de un sistema real del entorno usando estándares con retroalimentación iterativa."],correct:3,
+   feedback:"Analizar ejemplos desarrolla pensamiento crítico pero no la competencia de documentar. Documentar sistemas diseñados por el docente limita la transferencia. Las plantillas facilitan pero pueden convertirse en rellenar formularios. Solo documentar un sistema real con retroalimentación iterativa combina aplicación auténtica, estándares profesionales y ciclos de mejora —como se desarrolla una competencia técnica real."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente aplica una rúbrica para evaluar el desempeño técnico y todos obtienen calificaciones muy altas. Antes de concluir que el módulo fue exitoso, ¿qué debe verificar?",
+   options:["Que la rúbrica no fue tan sencilla que cualquier desempeño básico pudiera alcanzar el nivel máximo.","Que las calificaciones son coherentes con las notas obtenidas en las demás asignaturas del grado.","Que los padres estén satisfechos con las calificaciones y no presenten reclamos al respecto.","Que el porcentaje de aprobados supera el promedio histórico del módulo para confirmar la efectividad."],correct:0,
+   feedback:"La coherencia con otras asignaturas, la satisfacción de padres y los promedios históricos son indicadores externos. La pregunta clave es interna: ¿la rúbrica realmente evalúa la competencia con el nivel de exigencia adecuado? Rúbricas con descriptores poco exigentes producen calificaciones altas sin reflejar dominio real de la competencia técnica."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"Al finalizar una unidad de Redes, tres estudiantes obtienen calificaciones muy bajas en la evaluación sumativa. ¿Cuál es la acción pedagógica más pertinente?",
+   options:["Informar a los padres de los tres estudiantes y citarlos para acordar un plan de refuerzo desde el hogar.","Analizar con los tres estudiantes qué resultados no lograron, diseñar actividades focalizadas y dar seguimiento hasta el logro.","Asignar trabajos adicionales para que mejoren su calificación antes del cierre del período.","Referirlos al Departamento de Orientación para evaluar si hay factores emocionales que afecten su rendimiento."],correct:1,
+   feedback:"Informar a padres es complementario pero no resuelve el problema pedagógico. Los trabajos adicionales sin análisis del error pueden repetir lo que no funcionó. La referencia a orientación aplica cuando hay indicios de factores emocionales, no como primera respuesta al bajo rendimiento académico. La acción correcta es la intervención pedagógica directa del docente antes de externalizar."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente quiere desarrollar la Competencia de Resolución de Problemas en el módulo de Desarrollo de Aplicaciones. ¿Cuál estrategia la activa de forma más auténtica?",
+   options:["Presentar un problema técnico real del sector sin solución predefinida para que los estudiantes diseñen su propia solución.","Presentar un problema con varios caminos posibles y pedir que elijan y justifiquen uno de ellos.","Presentar problemas graduados en dificultad para que los estudiantes los resuelvan aplicando pasos del método analítico.","Presentar un caso empresarial y pedir que identifiquen el problema central y propongan soluciones alternativas."],correct:0,
+   feedback:"Elegir entre soluciones dadas, seguir pasos graduados o identificar en un caso diseñado tienen andamiaje predefinido. Solo el problema real sin solución predefinida activa plenamente la competencia: el estudiante formula el problema, investiga, diseña e implementa —proceso completo con incertidumbre real, esencia de la competencia profesional."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente implementa autoevaluación y nota que la mayoría se sobrevalora sistemáticamente. ¿Cuál es la respuesta pedagógica más adecuada?",
+   options:["Eliminar la autoevaluación del módulo porque los estudiantes no tienen madurez para evaluarse objetivamente.","Reducir el peso de la autoevaluación en la nota para minimizar su impacto en la calificación final.","Enseñar explícitamente cómo usar los criterios de la rúbrica con práctica guiada y ejemplos concretos antes de aplicarla.","Pedir que justifiquen cada puntuación por escrito para que el docente pueda corregir los excesos individualmente."],correct:2,
+   feedback:"Eliminar priva de una competencia metacognitiva fundamental. Reducir el peso no resuelve el problema de comprensión. Las justificaciones escritas pueden ser argumentadas pero no necesariamente más precisas. La sobrevaluación indica que los estudiantes no saben usar los criterios —la solución es enseñar esa habilidad con ejemplos concretos que hagan observable cada nivel."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"Una evaluación formativa revela que el 70% del grupo no comprende la herencia en POO. ¿Cuál acción docente es la más pertinente antes de avanzar al siguiente tema?",
+   options:["Retomar el tema con una explicación más detallada y clara, asegurándose de que todos tomen nota.","Replantear la estrategia de enseñanza usando nuevos ejemplos y actividades colaborativas, y evaluar nuevamente antes de continuar.","Organizar grupos donde los estudiantes que sí comprendieron expliquen el concepto a sus compañeros.","Asignar práctica adicional para que los estudiantes refuercen el concepto de forma autónoma."],correct:1,
+   feedback:"Retomar con explicación más detallada repite el mismo método que no funcionó. El aprendizaje entre pares es valioso pero insuficiente como única respuesta al 70%. La práctica adicional sin cambio metodológico no garantiza comprensión. Solo la opción correcta combina replanteamiento metodológico real y verificación del logro mediante nueva evaluación antes de continuar."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Seguridad Informática quiere desarrollar el Pensamiento Crítico. ¿Cuál actividad lo activa de forma más auténtica?",
+   options:["Presentar noticias sobre ataques informáticos recientes y pedir que identifiquen los tipos de vulnerabilidades.","Pedir que investiguen los diez ataques más comunes y presenten un informe comparativo al grupo.","Proponer que auditen la seguridad de una red real, identifiquen vulnerabilidades, cuestionen las decisiones de configuración y propongan mejoras fundamentadas.","Organizar un debate sobre implicaciones éticas del hacking donde los estudiantes defiendan posiciones opuestas."],correct:2,
+   feedback:"Identificar en noticias es análisis básico. Investigar e informar desarrolla conocimiento declarativo. El debate desarrolla argumentación pero no aplicación técnica. La auditoría de seguridad combina los tres elementos del Pensamiento Crítico: analizar evidencias, cuestionar supuestos y proponer alternativas fundamentadas en contexto técnico auténtico."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente de Programación Web implementa ABP (Aprendizaje Basado en Proyectos). ¿Cuál condición hace que el proyecto sea auténtico?",
+   options:["Que el proyecto tenga un plazo real con consecuencias académicas si no se entrega a tiempo.","Que sea evaluado por un experto externo al centro para garantizar objetividad técnica.","Que responda a un problema o necesidad real cuya solución tenga valor más allá del aula.","Que integre contenidos de al menos tres unidades del módulo para garantizar su complejidad técnica."],correct:2,
+   feedback:"El plazo con consecuencias es gestión, no autenticidad. La evaluación externa añade valor pero no define la autenticidad. Integrar tres unidades garantiza complejidad pero no autenticidad. La autenticidad en el ABP tiene un único criterio: que el problema sea real y que la solución tenga valor genuino para alguien fuera del contexto escolar."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Diseño Gráfico aplica evaluación formativa con retroalimentación escrita y los estudiantes raramente la leen. ¿Cuál ajuste resuelve mejor este problema?",
+   options:["Entregar la retroalimentación escrita junto con la calificación numérica para que tengan ambos referentes.","Entregar primero la retroalimentación sin calificación y pedir que ajusten su trabajo antes de recibir la nota.","Resumir la retroalimentación en una frase clave para que sea más fácil de leer y asimilar.","Publicar la retroalimentación anónimamente en el aula virtual para que aprendan de los comentarios de todos."],correct:1,
+   feedback:"Entregar retroalimentación con nota hace que la nota capture toda la atención. Resumir en una frase reduce el contenido formativo. La publicación anónima no garantiza que el propio estudiante procese su retroalimentación. Entregar retroalimentación sin nota y requerir ajuste del trabajo obliga a leer, procesar y actuar —transformando la retroalimentación en insumo para mejorar, no en justificación de una nota."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente quiere desarrollar la Competencia de Trabajo Colaborativo en el módulo de Bases de Datos. ¿Cuál condición es más importante para que el trabajo grupal la desarrolle genuinamente?",
+   options:["Que los grupos sean heterogéneos para que los estudiantes avanzados apoyen a los demás.","Que cada miembro tenga un rol definido con responsabilidades claras e interdependientes, de modo que el éxito dependa de todos.","Que el proyecto tenga suficiente complejidad para que ningún estudiante pueda completarlo individualmente.","Que el docente supervise regularmente las reuniones para asegurarse de que todos participen activamente."],correct:1,
+   feedback:"Los grupos heterogéneos favorecen el aprendizaje entre pares pero no garantizan colaboración real. La complejidad puede generar dependencia pero no necesariamente colaboración. La supervisión detecta problemas pero no crea la condición estructural. La clave es la interdependencia positiva: que los roles sean complementarios y que el éxito colectivo dependa realmente de todos."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"Un estudiante de Programación siempre entrega proyectos que funcionan, pero al interrogarle demuestra que no comprende lo que escribió. ¿Cuál es la respuesta pedagógica más adecuada?",
+   options:["Reducir la calificación de los proyectos anteriores una vez comprobado que no comprende el código.","Aplicar evaluaciones orales complementarias para verificar la comprensión junto con los proyectos entregados.","Reportar el caso a la Comisión de Ética como posible plagio o uso de inteligencia artificial sin declarar.","Asignar proyectos adicionales de mayor dificultad para forzar que comprenda lo que hace."],correct:1,
+   feedback:"Reducir calificaciones retroactivamente es cuestionable. El reporte a ética puede ser eventual pero no es el primer paso pedagógico. Los proyectos más difíciles sin comprensión base agravan el problema. La respuesta correcta ajusta la estrategia de evaluación: incorporar evaluaciones orales que verifiquen la comprensión junto con los productos, garantizando que la evaluación capture la competencia real."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente de Administración Empresarial usa solo la clase magistral. El coordinador le señala que es insuficiente para el desarrollo de competencias. ¿Cuál argumento pedagógico es el más sólido?",
+   options:["Que las clases magistrales aburren a los estudiantes y reducen su motivación hacia el módulo.","Que el MINERD establece que cada clase debe incluir al menos tres estrategias didácticas diferentes.","Que las competencias se desarrollan a través de la actuación del estudiante en situaciones complejas, no principalmente escuchando.","Que los estudiantes aprenden mejor cuando trabajan en grupos que cuando reciben instrucción del docente."],correct:2,
+   feedback:"La desmotivación es consecuencia posible pero no el argumento pedagógico central. No existe norma del MINERD que prescriba número de estrategias por clase. El aprendizaje cooperativo es valioso pero no necesariamente superior en todos los contextos. El argumento sólido apunta a la naturaleza de las competencias: requieren que el estudiante actúe, decida y resuelva —lo que la clase magistral exclusiva no puede garantizar."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Cosmetología quiere monitorear continuamente el proceso de aprendizaje durante el trimestre. ¿Cuál combinación de estrategias evaluativas es más coherente con ese propósito?",
+   options:["Evaluaciones formativas periódicas con retroalimentación y ajustes metodológicos según los resultados.","Evaluaciones sumativas parciales al final de cada unidad con retroalimentación escrita individual.","Autoevaluaciones semanales de los estudiantes más una evaluación formativa mensual del docente.","Evaluaciones diagnósticas al inicio de cada unidad para verificar si se retuvieron los aprendizajes previos."],correct:0,
+   feedback:"Las sumativas parciales son puntos de control, no monitoreo continuo. Las autoevaluaciones sin mediación docente pierden objetividad. Los diagnósticos por unidad miran hacia atrás. Solo las evaluaciones formativas periódicas con retroalimentación y ajuste metodológico cumplen los tres requisitos del monitoreo continuo: frecuencia, retroalimentación oportuna y modificación de la enseñanza como respuesta."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Turismo quiere evaluar las tres dimensiones de la competencia. ¿Qué combinación de instrumentos es la más completa?",
+   options:["Prueba escrita de casos + práctica con lista de cotejo + registro de observación de actitudes del docente.","Prueba oral de conceptos + práctica de laboratorio + escala de valoración de trabajo colaborativo.","Portafolio digital con evidencias + rúbrica de producto final + autoevaluación del estudiante.","Examen teórico-práctico integrado + escala de actitudes + coevaluación entre pares del proceso."],correct:0,
+   feedback:"La opción A usa prueba de casos (saber aplicado), lista de cotejo en práctica (saber hacer observable con criterios concretos) y registro de observación docente (saber ser documentado sistemáticamente, no autorreportado). Las otras opciones mezclan instrumentos con limitaciones: la oral puede depender del evaluador, la autoevaluación puede estar sesgada, la coevaluación sin entrenamiento genera sesgos."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"Al aplicar la rúbrica del módulo, los estudiantes interpretan diferente el criterio 'calidad técnica del código'. ¿Cuál es la acción más pertinente?",
+   options:["Revisar la redacción del criterio y reformularlo con descriptores más específicos para la próxima evaluación.","Mostrar al grupo un ejemplo concreto de código que cumpla plenamente el criterio antes de que inicien la actividad.","Explicar verbalmente el criterio al grupo completo y responder las dudas específicas que surjan.","Pedir que escriban su propia interpretación y luego consensuar una definición grupal del criterio."],correct:1,
+   feedback:"Reformular para la próxima evaluación es mejora futura pero no resuelve el problema actual. La explicación verbal es abstracta y puede generar nuevas interpretaciones. El consenso grupal puede no coincidir con el estándar técnico. Mostrar un ejemplo concreto de código que cumpla el criterio hace observable y tangible lo que antes era ambiguo —resolviendo la ambigüedad en el momento oportuno."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Mecánica aplica una lista de cotejo para evaluar el ensamblaje y nota que no contempla el criterio de documentación. ¿Cuál es la acción más apropiada?",
+   options:["Aplicar la lista tal como está y evaluar la documentación en la próxima práctica con un instrumento nuevo.","Agregar el criterio antes de aplicar la lista y comunicar el cambio a los estudiantes con anticipación.","Solicitar la documentación verbalmente al final de la práctica y agregarla como criterio en la próxima planificación.","Evaluar la documentación por separado con una nota adicional que se promedié con la calificación de la lista."],correct:1,
+   feedback:"Aplicar el instrumento incompleto no recoge toda la evidencia del resultado. Solicitar verbalmente sin criterio explícito vulnera la transparencia evaluativa. Una nota adicional por separado fragmenta la evaluación sin coherencia. Solo agregar el criterio antes de aplicar —comunicándolo claramente— respeta el principio de transparencia evaluativa: los criterios deben ser conocidos antes de la evaluación."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"Un estudiante falta al examen final con constancia médica válida. ¿Cuál es la obligación del docente según el Art. 23j de las Normas de Convivencia?",
+   options:["Programar una evaluación completiva que evalúe los mismos resultados de aprendizaje del examen.","Promediar las calificaciones del período para obtener una nota equivalente al examen no realizado.","Acordar con el Equipo de Gestión la modalidad de evaluación sustitutiva más adecuada para el caso.","Evaluar al estudiante en la próxima sesión mediante una prueba oral sobre los contenidos del examen."],correct:0,
+   feedback:"Promediar no evalúa los resultados específicos del examen final. Acordar con el Equipo añade burocracia que el Art. 23j no requiere. Una prueba oral no garantiza equivalencia con el instrumento original. El Art. 23j establece el derecho al examen completivo —mismos resultados, instrumento comparable— sin condicionamientos adicionales que alteren la validez de la evaluación."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 6: Liderazgo en el trabajo",
+   text:"La directora pide al docente técnico que lidere la actualización curricular del módulo de Desarrollo de Aplicaciones. ¿Qué condición es indispensable para que ese liderazgo sea efectivo?",
+   options:["Que el docente tenga más de cinco años de experiencia impartiendo el módulo en ese centro.","Que conozca profundamente los contenidos técnicos del módulo y el marco curricular del MINERD y el perfil de egreso.","Que cuente con el apoyo explícito de la dirección y los recursos necesarios para investigar.","Que haya participado previamente en procesos de actualización curricular en otros centros del distrito."],correct:1,
+   feedback:"Los años de experiencia, el apoyo directivo y la experiencia previa son condiciones útiles pero no indispensables por sí solas. El liderazgo curricular efectivo requiere dominio simultáneo de dos dimensiones: el conocimiento técnico profundo del campo (para identificar qué actualizar) y el dominio del marco curricular institucional (para saber cómo integrarlo correctamente)."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 8: Trabajo en equipo",
+   text:"El docente técnico participa en un claustro sobre baja motivación de los estudiantes del técnico profesional. Tiene información diagnóstica valiosa de su módulo. ¿Cuál aporte es más coherente con el Área 8 de la EDD?",
+   options:["Compartir sus datos diagnósticos, analizarlos junto al equipo y proponer estrategias colectivas para todos los módulos.","Presentar sus datos y esperar que el coordinador decida qué acciones tomar a partir de ellos.","Compartir sus estrategias exitosas para que cada docente las implemente de forma independiente.","Solicitar al coordinador que organice un taller externo antes de tomar decisiones basadas en los datos."],correct:0,
+   feedback:"Esperar la decisión del coordinador es pasivo. Compartir para implementación independiente es divulgación, no trabajo en equipo. Solicitar taller externo pospone la acción. El trabajo en equipo efectivo implica compartir como insumo colectivo, analizar en conjunto y construir propuestas compartidas que el equipo implemente de forma articulada."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente detecta que un estudiante tiene conocimientos informales muy avanzados en programación que superan los del grupo. ¿Cuál estrategia de gestión es la más pertinente?",
+   options:["Permitir que el estudiante avanzado salte las actividades básicas y trabaje directamente en los proyectos finales.","Pedir que prepare mini-talleres para el resto del grupo mientras el docente diseña retos de profundización para él.","Evaluarlo por equivalencia y eximirlo de las prácticas que ya domina para optimizar su tiempo.","Organizarlo como monitor permanente del grupo para que el docente pueda atender a los estudiantes con más dificultades."],correct:1,
+   feedback:"Saltarse actividades básicas puede crear lagunas en competencias no formalizadas. La equivalencia sin supervisión puede dejar sin documentar competencias que requieren certificación. El monitor permanente lo instrumentaliza sin garantizar su propio desarrollo. La estrategia correcta activa su conocimiento como recurso del grupo y diseña retos de profundización específicos —garantizando su avance y su contribución al aprendizaje colectivo."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente de Redes observa que dos estudiantes duermen en clase. Antes de actuar, ¿qué debe verificar según las Normas de Convivencia?",
+   options:["Si existe una causa subyacente como condición de salud, situación familiar o trabajo nocturno que explique la conducta.","Si la conducta es reiterada o si es la primera vez que ocurre para determinar el tipo de falta aplicable.","Si los estudiantes están cumpliendo con las tareas y evidencias del módulo a pesar de la situación.","Si el comportamiento está afectando el proceso de aprendizaje de los compañeros en el aula."],correct:0,
+   feedback:"La reiteración determina gradación de la falta pero no es lo primero. Que cumplan tareas o que afecten a otros son criterios de impacto, no de causa. El Art. 17a de las Normas exige verificar primero si la conducta corresponde a una condición especial o de salud. Esta verificación protege al estudiante vulnerable de recibir una sanción por una situación que requiere apoyo, no castigo."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Contabilidad quiere desarrollar la Ciudadanía y Convivencia a través del módulo. ¿Cuál situación de aprendizaje lo activa de forma más coherente con las Competencias Fundamentales?",
+   options:["Diseñar colaborativamente el sistema contable para una ONG comunitaria analizando su impacto social.","Realizar un foro de debate sobre la responsabilidad fiscal como deber ciudadano en la República Dominicana.","Investigar cómo la evasión fiscal afecta a comunidades vulnerables y proponer soluciones técnicas viables.","Configurar un sistema contable simulado para una institución pública con criterios de transparencia e inclusión."],correct:0,
+   feedback:"El foro debate el tema pero no produce competencia técnica aplicada. La investigación produce análisis pero no acción. El sistema simulado usa criterios de transparencia pero no con comunidad real. Solo diseñar el sistema para una ONG real combina acción técnica real, impacto comunitario verificable y reflexión sobre el rol social del técnico —los tres niveles de la competencia de Ciudadanía."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente de Gastronomía observa que sus estudiantes aprenden los procedimientos pero no los aplican con criterio cuando cambia una variable del contexto. ¿Cuál estrategia resuelve mejor esta brecha?",
+   options:["Asignar más prácticas de los mismos procedimientos hasta que los estudiantes los automaticen completamente.","Presentar situaciones prácticas reales con variables impredecibles donde los estudiantes deban adaptar los procedimientos.","Dedicar las últimas semanas del módulo a un bloque de práctica integradora con todos los procedimientos del año.","Evaluar procedimiento por procedimiento de forma separada para identificar cuál específicamente presenta la dificultad."],correct:1,
+   feedback:"Más prácticas de los mismos procedimientos desarrollan automatización, no adaptación. El bloque integrador llega tarde y comprime la práctica. Evaluar por separado identifica el problema pero no lo resuelve. Solo presentar situaciones con variables impredecibles que exijan adaptar los procedimientos desarrolla la flexibilidad cognitiva que distingue la competencia de la habilidad mecánica."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Enfermería quiere que sus estudiantes aprendan a tomar decisiones clínicas básicas. ¿Cuál estrategia desarrolla mejor esa capacidad?",
+   options:["Enseñar los protocolos clínicos de forma sistemática y pedir que los memoricen y apliquen según cada situación.","Presentar casos clínicos reales sin respuesta única donde los estudiantes deban analizar, priorizar y decidir con fundamentación.","Hacer demostraciones de toma de decisiones clínicas para que los estudiantes identifiquen el proceso correcto a seguir.","Pedir que los estudiantes investiguen los protocolos más usados en hospitales y presenten sus hallazgos al grupo."],correct:1,
+   feedback:"Memorizar y aplicar protocolos desarrolla habilidad procedimental, no decisión clínica. Las demostraciones del docente modelan el proceso pero no garantizan que el estudiante lo internalice. Investigar protocolos desarrolla conocimiento declarativo. Solo los casos reales sin respuesta única activan la capacidad de decisión: el estudiante analiza, pondera opciones y justifica —que es la competencia clínica real."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 6: Liderazgo en el trabajo",
+   text:"La docente María coordina un Círculo de Estudio Docente sobre metodologías activas. ¿Qué combinación de áreas de la EDD refleja mejor esta práctica?",
+   options:["Áreas 7 (Formación Continua) y 8 (Trabajo en Equipo), porque combina actualización con colaboración entre pares.","Áreas 6 (Liderazgo) y 7 (Formación Continua), porque implica dirigir un espacio de actualización profesional.","Áreas 5 (Relaciones) y 8 (Trabajo en Equipo), porque fortalece el vínculo profesional con colegas del centro.","Áreas 2 (Currículo) y 7 (Formación Continua), porque actualiza el conocimiento curricular y mejora su aplicación."],correct:0,
+   feedback:"El liderazgo se expresa pero no es el área primaria cuando la docente es participante-coordinadora entre pares. Las relaciones se fortalecen pero no definen la práctica. El currículo puede mejorar como efecto, no como área evaluada. Un Círculo de Estudio combina por definición actualización profesional continua (Área 7) con colaboración sistemática entre pares (Área 8)."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente de Mecatrónica quiere que sus estudiantes aprendan a resolver fallos en sistemas automatizados. ¿Cuál estrategia desarrolla mejor esa competencia?",
+   options:["Enseñar los tipos de fallos más comunes y sus causas mediante presentaciones con diagramas y esquemas técnicos.","Proporcionar un sistema automatizado real con un fallo inducido para que los estudiantes lo diagnostiquen y reparen sin guía paso a paso.","Mostrar videos de técnicos resolviendo fallos para que los estudiantes observen y aprendan el proceso correcto.","Pedir que los estudiantes lean el manual técnico del equipo y respondan preguntas sobre los procedimientos de diagnóstico."],correct:1,
+   feedback:"Las presentaciones, los videos y el manual técnico desarrollan conocimiento declarativo sobre los fallos, no la capacidad de resolverlos. Solo enfrentar un fallo real sin guía paso a paso desarrolla la competencia de diagnóstico: el estudiante debe observar, formular hipótesis, probar y corregir —proceso que define el técnico competente frente al técnico que solo conoce los procedimientos."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente coordina la Feria Tecnológica del centro. ¿Cuál combinación de áreas de la EDD refleja mejor las competencias que esta designación pone en juego?",
+   options:["Áreas 6 (Liderazgo) y 8 (Trabajo en Equipo), porque exige coordinar personas y gestionar trabajo colaborativo.","Áreas 2 (Currículo) y 6 (Liderazgo), porque requiere aplicar el currículo técnico en un evento liderado por él.","Áreas 3 (Resultados) y 6 (Liderazgo), porque los resultados de los estudiantes se visibilizan en el evento.","Áreas 7 (Formación) y 8 (Trabajo en Equipo), porque implica aprender a coordinar eventos con otros."],correct:0,
+   feedback:"El currículo se aplica en aula, no en coordinación de evento. Los resultados de estudiantes son efecto, no la competencia evaluada en el coordinador. La formación aplica cuando hay aprendizaje nuevo, no cuando se ejercen competencias adquiridas. Coordinar una feria pone en juego directamente Liderazgo (tomar iniciativa, coordinar, influir) y Trabajo en Equipo (articular actores, distribuir responsabilidades)."
+  },
+
+// ══ BLOQUE 3: COMPORTAMIENTOS PROFESIONALES (Q81–Q120) ══
+
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Un estudiante envía al docente un mensaje de WhatsApp con una consulta académica legítima sobre la tarea. ¿Cuál es la respuesta éticamente correcta según el Art. 10b del Código de Ética?",
+   options:["No responder el mensaje privado e indicarle que las consultas deben hacerse en el espacio escolar o en encuentros grupales.","Responder la consulta brevemente de forma profesional ya que el contenido es académico y el propósito es formativo.","Responder incluyendo en copia a otro docente para que la comunicación no sea estrictamente privada.","No responder y reenviar el mensaje a la dirección para que quede registro de la consulta fuera de horario."],correct:0,
+   feedback:"Responder aunque sea brevemente crea el precedente de comunicación individual digital, que el Art. 10b prohíbe independientemente del contenido. Incluir a otro docente en copia no convierte WhatsApp en canal institucional grupal. Reenviar a dirección es desproporcionado. El Código es categórico: el uso de herramientas tecnológicas para interacción individual con estudiantes está prohibido sin excepción por contenido académico."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente técnico Carlos propone a un grupo pequeño de estudiantes terminar su proyecto en su casa argumentando que es voluntario y académico. ¿Por qué viola el Código de Ética?",
+   options:["Porque el Art. 10d prohíbe reunirse con estudiantes fuera del horario y el espacio escolar sin excepción por propósito.","Porque el Art. 10b prohíbe herramientas tecnológicas para relacionarse individualmente con estudiantes fuera del espacio escolar.","Porque el Art. 12b prohíbe convocar estudiantes a actividades externas sin autorización del Equipo de Gestión.","Porque el Art. 13d exige que el docente rinda cuentas de sus acciones dentro del espacio escolar, no fuera de él."],correct:0,
+   feedback:"El Art. 10b aplica a comunicaciones tecnológicas, no a reuniones presenciales. El Art. 12b aplica a actividades externas organizadas con autorización previa. El Art. 13d define la rendición de cuentas. El Art. 10d es categórico: ningún personal docente puede reunirse con estudiantes fuera del horario y el espacio escolar —sin excepción por propósito académico, voluntariedad o tamaño del grupo."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"Una estudiante adolescente le confía al docente que está siendo víctima de violencia intrafamiliar. El docente siente que debe proteger la confidencialidad. ¿Cuál es la obligación legal que prevalece según la Ley 136-03?",
+   options:["Denunciar ante el Ministerio Público o CONANI en un plazo no mayor a 24 horas, independientemente del deseo de confidencialidad.","Informar al orientador del centro para que él inicie el proceso de denuncia dentro de las 24 horas.","Consultar con la dirección antes de actuar para asegurar que la institución respalde la denuncia.","Hablar primero con la estudiante para evaluar su disposición a denunciar y actuar según su decisión."],correct:0,
+   feedback:"Informar al orientador puede parecer correcto pero el Art. 14 de la Ley 136-03 establece que la obligación de denuncia recae directamente en cualquier persona que tenga conocimiento. Consultar con la dirección puede retrasar la denuncia más allá de las 24 horas. Esperar la decisión de la estudiante transfiere una obligación legal del adulto a la menor víctima. El docente tiene obligación personal e intransferible."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Un periodista llama al docente para preguntarle sobre un caso de presunto abuso en el centro. Los hechos ya son de conocimiento público. ¿Qué debe hacer según el Art. 14f del Código de Ética?",
+   options:["Abstenerse de ofrecer cualquier declaración y referir al periodista al Departamento de Comunicación de la Dirección Regional.","Confirmar solo los hechos ya públicos y abstenerse de revelar información confidencial sobre el caso.","Indicar que el caso está siendo manejado por las autoridades y no ofrecer detalles adicionales.","Consultar con el director antes de responder para actuar con el respaldo institucional necesario."],correct:0,
+   feedback:"Confirmar hechos ya públicos, indicar que el caso está en manos de autoridades o consultar con el director implican ofrecer declaraciones de algún tipo. El Art. 14f es absoluto: docentes y administrativos deben 'abstenerse de ofrecer declaraciones' a medios sobre estos casos —sin excepción por nivel de información ya pública."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Se conformará la Comisión de Ética del centro. Un docente sancionado con amonestación oral el año anterior solicita ser suplente. ¿Puede integrarse según el Art. 33 Párrafo 3?",
+   options:["No puede, porque el Código prohíbe sin distinción que cualquier persona que haya cometido una falta disciplinaria sea parte de la Comisión.","Sí puede, porque la amonestación oral es la sanción de menor grado y no deja antecedente formal en el expediente.","Sí puede como suplente, porque la restricción del Párrafo 3 aplica solo a los miembros titulares.","Puede si han transcurrido más de doce meses y no ha reincidido en faltas durante ese período."],correct:0,
+   feedback:"El Art. 33, Párrafo 3 es absoluto: no puede ser parte ninguna persona que haya cometido una falta disciplinaria. No hace excepción por tipo de sanción, por rol (titular o suplente), ni por tiempo transcurrido. La amonestación oral es una falta disciplinaria formal dentro del régimen del Código aunque sea la de menor grado."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"El docente observa que un colega se dirige habitualmente a los estudiantes con apodos que estos no parecen encontrar ofensivos. ¿Cuál es la postura ética correcta según el Art. 16a?",
+   options:["Reportarlo a la Comisión de Ética porque el Art. 16a tipifica esta conducta como falta sancionable independientemente de la reacción de los estudiantes.","No reportarlo si los estudiantes no muestran malestar, porque la falta solo existe si genera daño real observable.","Conversarlo directamente con el colega antes de reportar, siguiendo el principio de diálogo previo a toda sanción.","Observar más tiempo para determinar si la conducta es sistemática o esporádica antes de actuar formalmente."],correct:0,
+   feedback:"La falta no depende de si los estudiantes muestran malestar: el Art. 16a tipifica los apodos que 'puedan generar burlas e irrespeto', no los que efectivamente los generen. El diálogo con el colega es un gesto válido pero no sustituye el reporte formal. Esperar puede permitir que la conducta se normalice. El observador tiene responsabilidad ética de reportar a la Comisión independientemente de la reacción observable."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"La docente Ana comparte regularmente sus problemas personales con una estudiante de confianza. ¿Cuál artículo del Código de Ética se vulnera más directamente?",
+   options:["El Art. 10a, que establece que la relación debe ser académica y de servicio al proceso formativo.","El Art. 11a, que exige que el trato sea respetuoso de la dignidad, los valores y los derechos del estudiante.","El Art. 14a, que prohíbe acciones de cualquier índole que puedan afectar el bienestar del estudiante.","El Art. 13h, que obliga al docente a rendir cuentas de sus acciones dentro del espacio escolar."],correct:0,
+   feedback:"El Art. 11a es sobre dignidad y respeto, no sobre los límites del tipo de relación. El Art. 14a aplica a violencia y acoso. El Art. 13h trata de rendición de cuentas institucionales. El Art. 10a define con precisión cuál debe ser la naturaleza de la relación docente-estudiante: 'académica y de servicio al proceso formativo'. Compartir problemas personales viola exactamente esa definición."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente revisa continuamente su teléfono personal mientras sus estudiantes trabajan una práctica de laboratorio. ¿Cuál artículo del Código de Ética se incumple más directamente?",
+   options:["El Art. 13d, que establece la obligación de rendir cuenta de las acciones dentro del espacio escolar.","El Art. 13f, que regula la conducta del personal de seguridad dentro del espacio escolar.","El Art. 8, que establece que los postulados éticos aplican en todos los espacios de interacción.","El Art. 14d, que prohíbe situaciones que puedan convertirse en abuso de poder contra el estudiante."],correct:0,
+   feedback:"El Art. 13f aplica a personal de seguridad, no al docente. El Art. 8 es un principio general de alcance. El Art. 14d aplica a abuso de posición. El Art. 13d establece la obligación de rendir cuenta de las acciones dentro del espacio escolar —incluyendo las omisiones. Usar el teléfono personal durante la práctica implica omitir la supervisión activa que el cargo exige."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Un padre ofrece al docente un regalo costoso en agradecimiento por el apoyo brindado a su hijo. El docente lo rechaza. ¿Cuál valor del Código fundamenta principalmente esa decisión?",
+   options:["La Probidad, porque exige que los valores asumidos estén presentes en las tareas desempeñadas sin buscar ventajas personales.","La Honestidad, porque implica reconocer los hechos de los que uno es responsable y actuar en consecuencia.","La Transparencia, porque las acciones del docente deben reflejar la verdad sin sacar ventajas personales.","La Integridad, porque exige una actuación coherente apegada a los compromisos y al sistema de valores docente."],correct:0,
+   feedback:"Honestidad aplica al reconocimiento de la verdad. Transparencia aplica a que las acciones reflejen la verdad. Integridad implica coherencia con valores propios. Probidad —definida en el Art. 6 como 'el reflejo de que los valores asumidos están presentes en las tareas desempeñadas'— es el valor que articula directamente la renuncia a ventajas personales en el ejercicio profesional."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente técnico pide a un estudiante que le lleve el almuerzo al aula. El estudiante no muestra resistencia. ¿Cuál artículo tipifica esta conducta?",
+   options:["El Art. 14d, que tipifica como abuso de poder prohibido cualquier situación que pueda convertirse en abuso por la posición del docente.","El Art. 10e, que prohíbe regalos del docente al estudiante (en sentido inverso).","El Art. 11c, que tipifica como privilegio indebido entre estudiantes.","El Art. 22d, que tipifica como soborno sancionable con desvinculación."],correct:0,
+   feedback:"El Art. 10e prohíbe regalos del docente al estudiante, no al revés. El Art. 11c aplica cuando se favorece a ciertos estudiantes frente a otros. El Art. 22d tipifica soborno en sentido de compra de voluntades institucionales. El Art. 14d es el aplicable: prohíbe 'cualquier situación que pueda convertirse en un abuso de poder contra el estudiante debido a la posición' del docente."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"El docente favorece sistemáticamente a estudiantes que son hijos de colegas en turnos y actividades especiales. ¿En cuál artículo se tipifica esto y con qué sanción?",
+   options:["En el Art. 18l, como actos de preferencia por vínculos de amistad cercana, sancionable con amonestación escrita.","En el Art. 16a, como conducta que genera burlas e irrespeto al resto del grupo, sancionable con amonestación oral.","En el Art. 14c, como acoso por parte del docente hacia los estudiantes no favorecidos.","En el Art. 22b, como causal de desvinculación por conducta que afecta la dignidad de los estudiantes."],correct:0,
+   feedback:"El Art. 16a aplica a apodos, no a preferencias. El Art. 14c aplica a acoso, no a favoritismo. El Art. 22b es causal de desvinculación que exige gradación previa de sanciones. El Art. 18l es el artículo específico que tipifica los 'actos de preferencia a estudiantes por tener vínculos familiares o de amistad cercana' como falta de amonestación escrita."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Un padre llega alterado a reclamar la calificación de su hijo. El docente tiene la rúbrica aplicada correctamente. ¿Cuál combinación de valores del Código orienta la respuesta?",
+   options:["Verdad, Justicia y Probidad, que exigen mantener la decisión fundamentada sin ceder a la presión.","Tolerancia, Respeto y Equidad, que exigen considerar la perspectiva del padre antes de confirmar la nota.","Honestidad, Transparencia y Cooperación, que exigen explicar y si hay duda ceder parcialmente para mantener la relación.","Integridad, Responsabilidad y Solidaridad, que exigen actuar de forma coherente y flexible según el contexto."],correct:0,
+   feedback:"Tolerancia y equidad no implican ceder ante presión. La cooperación no implica ceder cuando la rúbrica fue correctamente aplicada. La flexibilidad no aplica a decisiones basadas en criterios objetivos. Verdad (reconocimiento de los hechos), Justicia (actuar dentro de los parámetros establecidos) y Probidad (valores presentes en las tareas) son los tres valores que orientan a mantener y defender una calificación objetivamente fundamentada."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El coordinador sugiere cambiar a la tanda nocturna a una estudiante adolescente embarazada porque 'se distraería menos'. ¿Cuál norma específica prohíbe esta medida de forma más directa?",
+   options:["El Art. 25 de las Normas de Convivencia, que prohíbe persuadir a adolescentes embarazadas al cambio de horario.","El Art. 24 de las Normas, que prohíbe la expulsión del estudiantado durante el año escolar.","El Art. 23 de las Normas, que prohíbe medidas que impidan el acceso al proceso educativo.","El Art. 7e de las Normas, que garantiza que los estudiantes sean tratados con dignidad y respeto."],correct:0,
+   feedback:"El Art. 24 prohíbe expulsiones pero cambiar de tanda no es expulsión. El Art. 23 prohíbe impedir el acceso pero el cambio de tanda no lo elimina. El Art. 7e es un derecho general de trato digno. Solo el Art. 25 es la norma específica y exclusiva: prohíbe expresamente 'persuadir a la adolescente al cambio de horario' y 'utilizar la carga académica como justificación' —que es exactamente lo que el coordinador propone."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Un estudiante llega por segunda vez sin uniforme al módulo técnico. El docente desea no dejarlo entrar. ¿Qué combinación de normas lo impide?",
+   options:["El Art. 8h de las Normas, que establece que el derecho a la docencia es superior al deber del uniforme, y el Art. 23e, que prohíbe negar el acceso al plantel.","El Art. 7e, que garantiza ser tratado con dignidad, y el Art. 14b del Código, que prohíbe discriminación.","El Art. 23e de las Normas y el Art. 10a del Código, que exige que la relación sea de servicio formativo.","El Art. 7a de las Normas y el Art. 11a del Código, que exige trato respetuoso en todo momento."],correct:0,
+   feedback:"La dignidad y el trato respetuoso son derechos generales pero no la norma específica que prohíbe negar el acceso. El Art. 10a regula la naturaleza de la relación, no el acceso físico. El Art. 7a es el derecho a la educación en general. Solo la combinación del Art. 8h (primacía del derecho a la docencia sobre el deber del uniforme) y el Art. 23e (prohíbe explícitamente negar el acceso) norma directamente este caso."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 7: Formación continua",
+   text:"El docente técnico de Informática no se ha actualizado en los últimos cuatro años. ¿Cuál de los ocho Estándares Profesionales del MINERD refleja más directamente este incumplimiento?",
+   options:["El estándar de Formación Continua, que establece la obligación de actualizarse en el área disciplinar y pedagógica.","El estándar de Dominio del Conocimiento, que exige que el docente maneje con solvencia los contenidos de su especialidad.","El estándar de Aplicación del Currículo, que requiere usar recursos y estrategias actualizadas en el aula.","El estándar de Liderazgo Pedagógico, que demanda que el docente promueva la innovación en su práctica."],correct:0,
+   feedback:"El Dominio del Conocimiento puede verse afectado como consecuencia pero el incumplimiento directo no es sobre el dominio sino sobre el deber de mantenerse actualizado. La Aplicación del Currículo es efecto de la falta. El Liderazgo Pedagógico es más amplio. El Estándar de Formación Continua establece explícitamente la obligación de actualizarse sistemáticamente —que es exactamente el comportamiento ausente."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"La docente técnica está en una clase virtual sentada en su cocina con ropa informal. ¿Cuál lineamiento específico del Art. 13c del Código de Ética se está incumpliendo?",
+   options:["La obligación de estar en un lugar apropiado para los fines educativos y vestir formalmente en encuentros virtuales.","La obligación de rendir cuentas de sus acciones dentro del espacio escolar, incluyendo los entornos virtuales.","La obligación de respetar el código de vestimenta del centro en todos los espacios de interacción.","La obligación de mantener una conducta coherente con los principios y valores éticos del rol docente."],correct:0,
+   feedback:"La rendición de cuentas (Art. 13d) es otra obligación. El código de vestimenta del centro (Art. 13e) aplica a la presencialidad física. La conducta coherente con valores (Art. 6) es el principio general. El Art. 13c para encuentros virtuales establece dos condiciones concretas y simultáneas: vestir formalmente Y estar en un lugar apropiado —el incumplimiento de cualquiera es una infracción al mismo artículo."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"La docente Cecilia observa que un colega tiene dificultades para manejar la disciplina y los estudiantes están afectando el aprendizaje. ¿Cuál es la respuesta profesional más adecuada?",
+   options:["Acercarse al colega de forma privada, ofrecerle apoyo y compartir estrategias de gestión del aula de manera colaborativa.","Informar a la dirección para que tome medidas correctivas con el colega sin intermediarios.","Comentarlo con otros colegas del departamento para encontrar una solución colectiva al problema.","Esperar que el colega solicite ayuda por sí mismo para no interferir en su autonomía pedagógica."],correct:0,
+   feedback:"Informar a la dirección como primera acción es desproporcionado. Comentarlo con otros sin hablar directamente con el afectado viola la discreción. Esperar puede prolongar el daño a los estudiantes. Los valores de Cooperación, Solidaridad y Discreción del Código orientan a la acción directa y privada entre colegas: ofrecer apoyo primero, antes de escalar, respetando la dignidad del colega."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente técnico quiere crear un grupo de WhatsApp con sus estudiantes para compartir recursos del módulo. ¿Qué debe considerar según el Código de Ética?",
+   options:["Que WhatsApp es una plataforma personal y la interacción digital con estudiantes debe realizarse a través de plataformas institucionales del centro.","Que el grupo sea solo para compartir archivos y esté configurado para que solo el docente pueda publicar.","Que el grupo incluya al coordinador pedagógico como miembro para garantizar supervisión institucional.","Que los padres de los estudiantes menores de edad sean añadidos al grupo para garantizar transparencia."],correct:0,
+   feedback:"Configurar restricciones o añadir al coordinador no convierte WhatsApp en canal institucional apropiado. Incluir a los padres tampoco resuelve el problema de fondo. El Art. 10b establece que el uso de herramientas tecnológicas en la interacción con estudiantes debe ser formativo y realizarse en el marco de encuentros grupales —a través de plataformas institucionales del centro, no de aplicaciones de mensajería personal."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"Un estudiante llega al aula visiblemente alterado y con señales de haber llorado. El docente debe iniciar la clase. ¿Cuál respuesta equilibra mejor el bienestar del estudiante con las obligaciones del docente?",
+   options:["Permitir que el estudiante esté presente sin forzar participación y en el primer momento disponible orientarlo discretamente al orientador.","Iniciar la clase normalmente y acercarse al estudiante al final para preguntarle cómo está en privado.","Detener la clase completa para atender al estudiante frente al grupo y mostrar empatía colectiva.","Llamar inmediatamente a los padres del estudiante para informarles de su estado antes de continuar."],correct:0,
+   feedback:"Acercarse solo al final puede ser demasiado tarde. Detener la clase para atenderle frente al grupo viola su privacidad y puede agravarlo. Llamar a los padres inmediatamente puede ser desproporcionado. El equilibrio correcto: presencia respetuosa y referencia discreta al orientador en el primer momento apropiado —sin interrumpir el aprendizaje de los demás ni exponer al estudiante."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"La Comisión de Ética recibe una denuncia contra el docente técnico. El docente es convocado a comparecer. ¿Cuál es la postura ética correcta según el Código?",
+   options:["Comparecer ante la Comisión, responder con transparencia y honestidad, y aportar las evidencias que considere pertinentes.","Presentarse con un representante legal para garantizar la protección de sus derechos durante el proceso.","Solicitar que el proceso sea manejado directamente por el Distrito Educativo para garantizar imparcialidad.","Presentarse solo si la denuncia fue presentada por escrito y con la firma del denunciante."],correct:0,
+   feedback:"El representante legal puede añadirse pero no es la postura ética central. Solicitar que el Distrito maneje el caso intenta evitar el proceso institucional establecido. Condicionar la comparecencia a la firma del denunciante viola los derechos del denunciante anónimo que el Art. 40 protege. El Código establece que el denunciado debe responder dentro del plazo; la postura correcta es comparecer con Transparencia y Verdad."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente observa en el patio que un grupo de estudiantes de otro módulo está siendo víctima de acoso escolar. No conoce a ninguno. ¿Cuál es su obligación según las Normas de Convivencia?",
+   options:["Reportarlo inmediatamente al orientador o dirección del centro para que los profesionales competentes intervengan.","Intervenir para detener la situación y reportarla al docente responsable del grupo involucrado.","No intervenir directamente para no exceder sus funciones con estudiantes que no son de su módulo.","Intervenir para detener la situación y reportarla directamente a la Comisión de Ética del centro en ese momento."],correct:0,
+   feedback:"Intervenir y reportar al docente del grupo es útil pero incompleto: el acoso requiere seguimiento profesional especializado. No intervenir es omisión. Reportar a la Comisión de Ética sin pasar por orientación salta el protocolo. El Art. 11 establece la obligación de denunciar ante las autoridades competentes del centro (orientación/dirección) cualquier situación de vulneración de derechos, independientemente de si los estudiantes pertenecen al módulo del docente."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 7: Formación continua",
+   text:"El docente asiste a un congreso internacional de tecnología educativa por iniciativa propia. ¿Cómo debe gestionar ese aprendizaje para que tenga impacto institucional?",
+   options:["Documentar lo aprendido, proponer en una reunión del claustro las innovaciones pertinentes y gestionar una sesión de socialización con colegas.","Compartir en el grupo de WhatsApp del departamento los recursos y presentaciones obtenidos.","Actualizar su planificación personal incorporando los nuevos enfoques aprendidos en el congreso.","Publicar en las redes sociales del centro las innovaciones conocidas para que la comunidad educativa se entere."],correct:0,
+   feedback:"Compartir en WhatsApp es informal y de bajo impacto institucional. Actualizar solo la planificación personal beneficia exclusivamente su módulo. Las redes sociales son para comunicación externa, no para gestión pedagógica interna. Documentar formalmente, proponer en claustro e impulsar una sesión de socialización transforma el aprendizaje individual en desarrollo institucional —lo que el Área 7 y el Área 8 de la EDD valoran conjuntamente."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"Dos estudiantes del módulo tienen un conflicto que el docente no pudo resolver directamente. ¿Cuál es el siguiente paso según las Normas de Convivencia?",
+   options:["Informar la situación al Equipo de Mediación del centro para que intervenga con las herramientas especializadas.","Aplicar una medida disciplinaria al estudiante que se niega a participar en la mediación.","Separar a los estudiantes en grupos distintos para proteger el ambiente de trabajo y que el proyecto avance.","Esperar que el estudiante renuente cambie de actitud y esté dispuesto a participar voluntariamente."],correct:0,
+   feedback:"Aplicar sanción por no querer mediar confunde la mediación (voluntaria) con obligación coercitiva. Separar gestiona el síntoma, no el conflicto. Esperar indefinidamente prolonga el daño al ambiente. Las Normas (Arts. 32-34) establecen que si la mediación directa del docente no funciona, el caso pasa al Equipo de Mediación del centro —que tiene las herramientas e el mandato institucional para manejarlo."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"La dirección le pide al docente técnico ceder dos semanas de su módulo para practicar para pruebas nacionales de otra asignatura. ¿Cuál es la postura más adecuada?",
+   options:["Expresar por escrito a la dirección la implicación pedagógica de la reducción para los resultados y proponer alternativas que atiendan ambas necesidades.","Aceptar sin cuestionamiento porque el principio de lealtad institucional obliga a cumplir lo que la dirección solicita.","Negarse porque la reducción del tiempo afecta los resultados de aprendizaje y los derechos de los estudiantes.","Aceptar una semana y negociar la otra como compromiso que minimice el impacto en ambas partes."],correct:0,
+   feedback:"Aceptar sin cuestionar puede vulnerar los derechos de los estudiantes. Negarse es confrontacional y no reconoce la autoridad. Negociar una semana sí/una no resuelve el síntoma. La postura correcta combina respeto a la autoridad con responsabilidad pedagógica: comunicar formalmente las implicaciones y proponer alternativas —documentando la postura y obligando a la dirección a decidir con información."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"La docente técnica sabe que un colega presentó una planificación falsa al coordinador porque no tuvo tiempo. ¿Cuál es la postura ética correcta?",
+   options:["Reportar el hecho a la Comisión de Ética porque la elaboración de documentos falsos está tipificada como falta en el Código.","Hablar directamente con el colega en privado para advertirle que lo que hizo tiene consecuencias disciplinarias graves.","No intervenir porque el asunto es entre el colega y el coordinador y no corresponde a su rol involucrarse.","Hablar primero con el colega y si no corrige reportarlo al coordinador pedagógico como primera instancia."],correct:0,
+   feedback:"Advertir al colega en privado puede ser un gesto humano pero no resuelve la falsedad ya cometida. No intervenir es omisión. Reportar al coordinador en lugar de a la Comisión de Ética no es el canal correcto. El Art. 20e tipifica la presentación de documentos falsos como falta sancionable y la Comisión de Ética es el órgano competente para recibir este tipo de denuncia según el Art. 31 del Código."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 6: Liderazgo en el trabajo",
+   text:"El director pide al docente que represente al centro en una jornada regional de actualización curricular. ¿Cuál es su responsabilidad al regresar?",
+   options:["Socializar con el equipo docente lo aprendido, liderar la discusión sobre su aplicación en el centro y apoyar la implementación colectiva.","Entregar al director un informe escrito con los temas tratados para que él decida qué acciones tomar.","Implementar en su planificación personal los cambios curriculares discutidos en la jornada.","Notificar a los colegas interesados para que cada uno adopte los cambios según su propio criterio."],correct:0,
+   feedback:"El informe al director traslada la responsabilidad sin liderazgo real. Implementar solo en su planificación personal no cumple la función de representación institucional. Notificar a interesados es informativo, no liderazgo. Al representar al centro, su responsabilidad incluye socializar con el equipo completo, liderar la discusión y apoyar la implementación —función del liderazgo pedagógico en su dimensión de transferencia del aprendizaje profesional al colectivo."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Al cierre del año escolar, el docente técnico considera que no tiene nada que reportar en la Rendición de Cuentas sobre lineamientos éticos porque no hubo incidentes. ¿Es correcta esta postura?",
+   options:["No, porque la Rendición de Cuentas incluye el reporte positivo de prácticas éticas implementadas, aprendizajes y áreas de mejora continua.","Sí, porque la Rendición de Cuentas solo tiene sentido cuando hubo faltas o incidentes que comunicar.","Sí, porque si no hubo incidentes el docente ha cumplido plenamente y no hay nada que rendir.","No, pero puede delegar su participación en el coordinador si no tiene aportes significativos."],correct:0,
+   feedback:"La Rendición de Cuentas no es solo para reportar incidentes —esa interpretación confunde rendición de cuentas ética con régimen disciplinario. Tampoco puede delegarse. El Art. 13h del Código establece que todos los docentes deben rendir cuentas de la 'aplicación y compromiso con los lineamientos éticos', incluyendo las buenas prácticas, los aprendizajes del año y las áreas de mejora —que siempre existen independientemente de si hubo incidentes."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"El docente descubre que un estudiante publica en sus redes sociales personales comentarios despectivos sobre un compañero fuera del horario escolar. ¿Cuál es su obligación?",
+   options:["Reportar la situación al orientador o a la Comisión de Ética porque el ciberacoso entre estudiantes es competencia del sistema educativo.","No intervenir porque ocurre fuera del horario escolar y las redes personales no son competencia del centro.","Hablar con el estudiante agresor en privado para pedirle que elimine los comentarios antes de reportarlo.","Informar a los padres del agresor directamente para que resuelvan la situación desde el hogar."],correct:0,
+   feedback:"Las Normas de Convivencia (Art. 5d y 19e) definen el maltrato a través de medios tecnológicos como conducta dentro del alcance normativo educativo, independientemente de si ocurre fuera del horario. Hablar primero con el agresor puede alertarle para eliminar evidencias. Informar a padres sin reporte institucional salta el protocolo. La Comisión de Ética o el orientador son los canales correctos para intervenir en ciberacoso."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Durante un laboratorio, un estudiante sufre una pequeña herida al manipular equipo técnico. El docente le brinda primeros auxilios. ¿Cuál debe ser el siguiente paso?",
+   options:["Reportar el incidente al director del centro, documentarlo en el registro correspondiente y asegurar atención médica si es necesario.","Llamar a los padres del estudiante inmediatamente para informarles del accidente y pedir que vengan a recogerlo.","Continuar la clase una vez atendida la herida ya que fue menor, y reportarlo al finalizar la jornada.","Suspender la práctica de laboratorio para el resto del grupo hasta evaluar las condiciones de seguridad del equipo."],correct:0,
+   feedback:"Llamar a los padres primero puede ser apropiado pero no es la acción institucional principal. Continuar sin reporte inmediato puede omitir documentación necesaria. Suspender para todo el grupo puede ser desproporcionado si la herida fue menor. El Art. 13d establece la obligación de rendir cuentas dentro del espacio escolar: reportar al director, documentar el incidente y asegurar atención médica son las tres acciones que protegen al estudiante y al docente."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"Un nuevo docente del mismo departamento se siente inseguro con la plataforma digital institucional. ¿Cuál forma de apoyo es más coherente con el Área 8 (Trabajo en Equipo) de la EDD?",
+   options:["Compartir los recursos propios, acompañarle en sus primeras sesiones y acordar reuniones periódicas de seguimiento.","Enseñarle a usar la plataforma en una sesión práctica y dejarlo practicar de forma autónoma a partir de ahí.","Reportar al coordinador la dificultad del docente nuevo para que gestione una capacitación institucional formal.","Enviarle tutoriales y guías de uso para que pueda revisarlos a su propio ritmo y pace."],correct:0,
+   feedback:"Una sesión única sin seguimiento puede ser insuficiente. Reportar al coordinador traslada la responsabilidad sin apoyo directo. Enviar tutoriales es unidireccional y no colaborativo. El Área 8 evalúa el trabajo colaborativo sostenido entre pares: compartir recursos, acompañar activamente y hacer seguimiento periódico es la única opción que expresa colaboración genuina y continuada."
+  }
+];
+
+// ══ BLOQUE ADICIONAL: 37 preguntas para completar 120 ══
+
+// ─ Planificación (12 más → total ~37) ─
+const extraQuestions = [
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Marketing Digital quiere integrar el eje transversal de Emprendimiento. ¿Cuál estrategia lo integra de forma genuinamente transversal y no como tema añadido?",
+   options:["Dedicar la primera semana del módulo a un taller de motivación emprendedora antes de iniciar los contenidos técnicos.","Incorporar el análisis de casos de emprendimientos digitales como material de lectura complementario del módulo.","Diseñar todas las actividades del módulo en torno al desarrollo de un emprendimiento digital real de los estudiantes.","Incluir en la evaluación final una pregunta sobre la importancia del emprendimiento en el marketing digital."],correct:2,
+   feedback:"El taller inicial trata el eje como tema aislado. El material complementario lo convierte en lectura extracurricular. La pregunta en la evaluación lo reduce a un ítem. Solo articular todas las actividades alrededor de un emprendimiento real hace que el eje atraviese genuinamente el módulo — que es la definición de transversalidad en el currículo dominicano."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El coordinador revisa la planificación del módulo de Mecatrónica y nota que los contenidos están ordenados de menor a mayor complejidad sin conexión entre unidades. ¿Qué principio se aplica parcialmente?",
+   options:["El principio de coherencia, porque los contenidos están organizados de forma lógica y sistemática.","El principio de progresión, porque avanza de menor a mayor complejidad pero falta articulación entre unidades.","El principio de integración, porque los contenidos del módulo están organizados en torno a la misma área técnica.","El principio de pertinencia, porque los contenidos responden a las necesidades del sector de mecatrónica."],correct:1,
+   feedback:"Coherencia aplica a consistencia interna entre todos los componentes. Integración refiere a articulación entre módulos. Pertinencia refiere al vínculo con el contexto externo. El principio de progresión organiza los aprendizajes de menor a mayor complejidad — y está aplicado parcialmente porque falta la articulación entre unidades que lo complete."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Logística elabora su planificación anual incluyendo solo contenidos declarativos. ¿Qué le falta según el diseño curricular por competencias?",
+   options:["Los contenidos actitudinales, que reflejan los valores que los estudiantes deben desarrollar en el módulo.","Los contenidos procedimentales, que son los más importantes en un módulo técnico profesional.","Los contenidos procedimentales y actitudinales, ya que el enfoque requiere los tres tipos articulados entre sí.","Los objetivos de aprendizaje, que permiten derivar los demás tipos de contenidos faltantes."],correct:2,
+   feedback:"Afirmar que solo faltan los actitudinales o solo los procedimentales es parcialmente correcto. El enfoque por competencias exige los tres tipos articulados simultáneamente —la competencia integra el saber, el saber hacer y el saber ser como un todo, no por prioridad ni por separado."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 3: Resultados de aprendizaje",
+   text:"Al iniciar el módulo de Administración Empresarial, el docente detecta que la mitad del grupo tiene conocimientos avanzados. ¿Cómo debe reflejar esto en su planificación?",
+   options:["Crear dos grupos: uno que inicie desde los básicos y otro que avance directamente a los complejos.","Ajustar el ritmo general hacia el nivel avanzado para no frenar a quienes ya dominan los básicos.","Mantener los resultados de aprendizaje para todos pero diseñar trayectorias diferenciadas: consolidación para unos y profundización para otros.","Rediseñar los resultados de aprendizaje del módulo para adecuarlos al nivel real del grupo diagnosticado."],correct:2,
+   feedback:"Separar grupos crea exclusión. Avanzar al ritmo avanzado abandona al 50% restante. Rediseñar los resultados baja el estándar institucional. La opción correcta aplica el principio de equidad: los resultados son los mismos para todos, pero se diseñan caminos distintos según el punto de partida diagnosticado."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El módulo de Fotografía tiene actividades sin vínculo visible con el sector productivo. ¿Cuál es la observación más pertinente del coordinador?",
+   options:["Que debe incorporar visitas a estudios fotográficos para contextualizar los contenidos.","Que el Componente Académico Técnico Profesional exige que las situaciones de aprendizaje estén contextualizadas en el sector.","Que las actividades deben incluir referencias de fotógrafos reconocidos para validar su pertinencia técnica.","Que el módulo debe incorporar proyectos con clientes reales al cierre del trimestre."],correct:1,
+   feedback:"Las visitas y los proyectos finales son estrategias puntuales, no solución estructural. Las referencias bibliográficas no sustituyen el contexto productivo. La observación pertinente apunta al principio curricular: el Componente Técnico Profesional exige contextualización en el sector desde el inicio, no solo al cierre."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Turismo planifica la unidad de elaboración de itinerarios. ¿Cuál situación de aprendizaje es más pertinente como eje integrador?",
+   options:["Resolver casos hipotéticos de viajeros con distintos presupuestos diseñados por la docente.","Elaborar el itinerario real de una excursión escolar del centro, gestionando proveedores y presupuesto reales.","Analizar itinerarios de agencias reales para identificar sus componentes y estructura profesional.","Hacer una presentación sobre los destinos turísticos más visitados de la República Dominicana."],correct:1,
+   feedback:"Los casos hipotéticos, el análisis de itinerarios y la presentación son actividades de aprendizaje, no situaciones integradoras. Solo elaborar el itinerario de una excursión real contextualiza todos los contenidos en el sector productivo, da sentido auténtico al aprendizaje y cumple la función articuladora."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Hotelería quiere integrar el eje de Género en su módulo. ¿Cuál estrategia lo hace genuinamente transversal?",
+   options:["Incluir en los proyectos del módulo reflexión sobre inequidades de género en la industria usando casos con protagonistas de distintos géneros.","Dedicar una clase inicial para sensibilizar al grupo sobre la equidad de género en el campo hotelero.","Agregar una actividad trimestral relacionada con el rol de la mujer en el turismo al final de cada unidad.","Incorporar la perspectiva de género en los criterios de evaluación asignando puntos por mencionarla."],correct:0,
+   feedback:"Una clase inicial o actividad trimestral hace del eje un tema puntual. Asignar puntos por mencionar el tema distorsiona la evaluación. Solo la integración continua en proyectos a lo largo del módulo con representación diversa responde al principio de transversalidad del currículo dominicano."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Mecánica nota que la planificación tiene actividades bien descritas sin instrumentos de evaluación asociados. ¿Qué elemento esencial falta?",
+   options:["La descripción de los momentos didácticos de cada actividad (inicio, desarrollo, cierre).","Los criterios e instrumentos de evaluación alineados a los indicadores de logro de cada actividad.","La estimación del tiempo de duración de cada actividad de la semana.","La vinculación de cada actividad con el eje transversal correspondiente del currículo."],correct:1,
+   feedback:"Los momentos didácticos, el tiempo y los ejes son componentes complementarios. Solo los criterios e instrumentos alineados a indicadores de logro hacen verificable el alcance de los resultados de aprendizaje. Sin ellos, la planificación no es evaluable ni permite retroalimentación objetiva."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente de Contabilidad quiere que los estudiantes elaboren estados financieros. ¿Cuál instrumento de evaluación es el más alineado con ese resultado de aprendizaje?",
+   options:["Una prueba escrita con preguntas abiertas sobre los tipos de estados financieros y su importancia.","Una rúbrica de desempeño aplicada mientras los estudiantes elaboran el estado de una empresa real.","Un portafolio donde los estudiantes recopilen evidencias de las actividades del trimestre.","Una escala de valoración de actitudes que mida la disposición durante las prácticas contables."],correct:1,
+   feedback:"La prueba escrita evalúa el conocimiento sobre estados financieros, no su elaboración. El portafolio recoge evidencias del proceso pero no evalúa directamente el desempeño. La escala de actitudes evalúa el saber ser. Solo la rúbrica durante la ejecución real evalúa lo que el resultado exige: 'elaborar', un verbo de desempeño observable en acción."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El docente de Electricidad planifica la práctica en una empresa. Además de la autorización del Equipo de Gestión, ¿qué condición es indispensable según el Art. 12a?",
+   options:["Obtener autorización escrita de los padres a partir del programa detallado de la actividad.","Contar con al menos un docente adicional que acompañe la actividad fuera del centro.","Entregar al Equipo una evaluación escrita de la actividad al finalizar.","Especificar en el programa los objetivos, el lugar, el tiempo y los participantes."],correct:0,
+   feedback:"El Art. 12a exige específicamente: autorización del Equipo de Gestión Y autorización escrita de padres/tutores a partir del programa detallado. La evaluación posterior y el docente adicional también son exigencias del artículo, pero la autorización de padres es la condición que protege directamente los derechos del estudiante y no puede omitirse."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"El docente de Mecánica Automotriz nota que el currículo oficial no contempla los vehículos eléctricos, ya relevantes en el sector. ¿Cuál es la acción más pertinente?",
+   options:["Sustituir un tema del currículo oficial por el de vehículos eléctricos y documentar el cambio.","Incorporarlos como recurso didáctico al servicio de los resultados de aprendizaje oficiales, documentándolo en la planificación.","Solicitar autorización al Distrito Educativo antes de incluir cualquier contenido no contemplado.","Esperar que el MINERD actualice el currículo antes de abordar tecnologías no contempladas."],correct:1,
+   feedback:"Sustituir contenido oficial excede la autonomía docente. Solicitar aval distrital no es requerido para recursos didácticos. Esperar la actualización priva a los estudiantes de contenido relevante. La acción correcta usa los vehículos eléctricos al servicio —no en lugar— de los resultados oficiales, con documentación transparente."
+  },
+  {dim:"Planificación Pedagógica",dimClass:"dim-planificacion",area:"Área 2: Aplicación del currículo",
+   text:"La docente técnica tiene cuatro grupos del mismo módulo con perfiles distintos. ¿Cuál práctica de planificación es más sólida pedagógicamente?",
+   options:["Elaborar una planificación común con los mismos resultados y estrategias diferenciadas por grupo según diagnóstico.","Elaborar cuatro planificaciones distintas adaptando los resultados a cada perfil de grupo.","Elaborar una planificación básica y ampliarla individualmente para cada grupo cuando sea necesario.","Usar la planificación del año anterior y ajustarla de forma espontánea según lo detectado en aula."],correct:0,
+   feedback:"Resultados distintos por grupo bajan el estándar para algunos. La planificación básica ampliada 'cuando sea necesario' no garantiza diferenciación sistemática. Ajustar sobre la marcha es improvisación. La opción correcta mantiene igualdad de estándar con diferenciación real mediante estrategias específicas para cada grupo según su diagnóstico."
+  },
+  // ─ Gestión del Aprendizaje (13 más → total ~41) ─
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Panadería quiere que sus estudiantes desarrollen autonomía en el laboratorio. ¿Cuál estrategia lo favorece más efectivamente?",
+   options:["Reducir progresivamente el andamiaje: primero modelar, luego guiar, luego supervisar a distancia.","Dar instrucciones detalladas al inicio de cada práctica para que sepan exactamente qué hacer en cada paso.","Estar disponible en el laboratorio para responder inmediatamente cualquier duda que surja.","Evaluar la práctica con una rúbrica que permita a los estudiantes autocorregirse mientras trabajan."],correct:0,
+   feedback:"Instrucciones detalladas generan dependencia. La disponibilidad inmediata refuerza la dependencia del docente. La rúbrica de autocorrección es herramienta útil pero no un proceso de desarrollo de autonomía. Solo la reducción progresiva del andamiaje (modelar → guiar → supervisar a distancia) construye la autonomía gradualmente —como se desarrolla la competencia de actuación independiente."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"En el módulo de Farmacia, la docente detecta que los estudiantes confunden sistemáticamente esterilización y desinfección. ¿Cuál es la intervención didáctica más efectiva?",
+   options:["Diseñar una actividad donde apliquen ambos procesos en contextos reales distintos y reflexionen sobre sus diferencias funcionales.","Explicar nuevamente ambos conceptos con definiciones más claras y precisas en la siguiente clase.","Pedir que busquen las diferencias en el texto guía y preparen un resumen para la siguiente clase.","Crear un cuadro comparativo para que los estudiantes copien las diferencias y lo estudien."],correct:0,
+   feedback:"Explicar con mejores definiciones repite la estrategia verbal que no funcionó. Buscar en el texto sigue siendo comprensión conceptual. El cuadro comparativo ayuda a memorizar pero no genera comprensión funcional. Solo aplicar ambos procesos en contextos reales distintos resuelve la confusión desde la actuación —el estudiante comprueba empíricamente cuándo se usa cada uno y por qué."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"En el módulo de Crianza Animal, la docente quiere evaluar si los estudiantes dominan el manejo sanitario del ganado. ¿Cuál estrategia de evaluación es más válida?",
+   options:["Una observación directa con lista de cotejo mientras cada estudiante realiza el manejo sanitario en condiciones reales.","Un examen escrito con casos donde describan los procedimientos de manejo sanitario paso a paso.","Una exposición oral donde expliquen los protocolos sanitarios aplicados durante el módulo.","Un portafolio donde recopilen fichas de registro de las prácticas sanitarias realizadas."],correct:0,
+   feedback:"El examen escrito y la exposición oral evalúan el saber declarativo del procedimiento, no su ejecución. El portafolio documenta registros pero no verifica que el estudiante ejecute correctamente en el momento. Solo la observación directa mientras el estudiante actúa en condiciones reales evalúa directamente la competencia de 'manejo sanitario' —que es una actuación, no una descripción."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"Al revisar los resultados de una evaluación sumativa en Topografía, la mayoría falló el mismo ítem sobre cálculo de pendientes. ¿Cuál es la interpretación pedagógica más correcta?",
+   options:["Que hay un problema de comprensión colectiva sobre ese concepto que el docente debe atender con una intervención pedagógica.","Que los estudiantes no estudiaron suficientemente ese tema antes de la evaluación.","Que el ítem era demasiado difícil para el nivel del grupo y debe ajustarse en la próxima evaluación.","Que el ítem estaba mal formulado y no medía lo que pretendía, por lo que debe anularse."],correct:0,
+   feedback:"Asumir que no estudiaron es interpretación punitiva. Ajustar la dificultad sin analizar la causa puede bajar el estándar innecesariamente. Anular sin evidencia de mala formulación elimina información diagnóstica valiosa. Cuando la mayoría falla el mismo ítem, la interpretación correcta es que hubo una falla en la enseñanza o comprensión colectiva —que corresponde al docente atender con intervención específica."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Hotelería propone simular la gestión de un hotel real durante un trimestre. ¿Cuál condición hace que la simulación desarrolle genuinamente competencias profesionales?",
+   options:["Que la simulación enfrente a los estudiantes a situaciones impredecibles donde deban tomar decisiones con consecuencias.","Que incluya todos los departamentos del hotel y cada estudiante rote por todos los roles.","Que los estudiantes sean evaluados con los mismos criterios que se usan en la industria real.","Que la simulación dure suficiente tiempo para que puedan profundizar en cada área del hotel."],correct:0,
+   feedback:"La rotación garantiza exposición, no desarrollo de competencia. Los criterios de la industria mejoran la evaluación pero no definen la autenticidad. La duración determina profundidad pero no autenticidad. La condición clave es la impredictibilidad: que los estudiantes enfrenten situaciones no guionizadas donde sus decisiones tengan consecuencias —que distingue la simulación profesional del juego de roles escolar."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Cosmetología quiere implementar coevaluación. ¿Qué condición es imprescindible para que sea válida y justa?",
+   options:["Que los estudiantes hayan sido entrenados en el uso de los criterios y en cómo dar retroalimentación constructiva.","Que ya se conozcan bien y tengan confianza mutua para dar retroalimentación honesta entre sí.","Que el docente revise y valide cada coevaluación antes de registrarla como calificación oficial.","Que la coevaluación tenga un peso reducido en la nota final para minimizar el impacto de posibles sesgos."],correct:0,
+   feedback:"La confianza favorece el clima pero no garantiza criterios comunes. La revisión docente convierte la coevaluación en heteroevaluación. Reducir el peso minimiza el daño pero no mejora la coevaluación. La condición imprescindible es el entrenamiento previo: los estudiantes deben aprender a usar los criterios y dar retroalimentación constructiva antes de evaluar —que es la inversión que hace la coevaluación pedagógicamente válida."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente de Mecánica aplica una rúbrica para el ensamblaje de un motor. Un estudiante reclama que no valora el tiempo que tardó. ¿Cuál es la respuesta pedagógicamente correcta?",
+   options:["Incluir el tiempo como criterio en la próxima rúbrica si es relevante para el desempeño profesional esperado.","Explicarle que el tiempo no es un criterio relevante en la evaluación de competencias técnicas.","Agregar puntos adicionales por haber terminado más rápido que sus compañeros.","Consultar con el coordinador si el tiempo debe ser criterio de evaluación en el módulo."],correct:0,
+   feedback:"Decir que el tiempo nunca es relevante es una generalización incorrecta —en muchos contextos técnicos la eficiencia temporal es competencia profesional real. Agregar puntos ad hoc viola la transparencia evaluativa. Consultar para cada criterio pospone la decisión pedagógica. La respuesta correcta evalúa si el tiempo es parte del perfil de egreso —y si lo es, lo incorpora formalmente en la próxima rúbrica."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Peluquería quiere desarrollar el Pensamiento Científico. ¿Cuál actividad lo activa de forma más auténtica?",
+   options:["Organizar una sesión donde comparen experimentalmente el efecto de distintos productos sobre el cabello, hipoteticen, observen y saquen conclusiones.","Pedir que investiguen los fundamentos químicos de los productos capilares que usan en el salón.","Incluir un texto científico sobre química capilar en la bibliografía para leer y discutir.","Mostrar videos de investigaciones sobre cosmetología para identificar el método científico aplicado."],correct:0,
+   feedback:"Investigar fundamentos teóricos desarrolla pensamiento analítico, no el proceso científico completo. El texto y los videos son recursos de exposición. Solo el experimento con hipótesis, observación y conclusión activa el Pensamiento Científico en su ciclo completo: los estudiantes formulan, prueban y concluyen —definición operativa de la Competencia Científica en el currículo dominicano."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Deportes y Recreación diseña aprendizaje colaborativo. Un grupo tuvo conflictos que paralizaron el trabajo. ¿Cuál es la respuesta pedagógica más adecuada?",
+   options:["Intervenir para mediar el conflicto y convertirlo en una oportunidad de aprendizaje sobre resolución de conflictos en equipos.","Disolver el grupo conflictivo y redistribuir sus integrantes en los otros grupos para que el trabajo concluya.","Permitir que el grupo resuelva solo su conflicto ya que gestionar diferencias es parte de la competencia colaborativa.","Evaluar al grupo con menor calificación por no haber podido funcionar efectivamente."],correct:0,
+   feedback:"Disolver el grupo evita el conflicto pero priva del aprendizaje colaborativo real. Dejarlos solos sin herramientas puede prolongar la parálisis. Evaluar con menor calificación sin intervención es punitivo. La respuesta correcta reconoce que el conflicto en equipos es una situación de aprendizaje valiosa —mediar y convertirla en práctica de resolución de conflictos es coherente con la Competencia de Trabajo Colaborativo."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Construcción observa que algunos estudiantes terminan las prácticas mucho antes que el resto. ¿Cuál es la respuesta pedagógica más apropiada en ese momento?",
+   options:["Asignarles actividades de profundización relacionadas con la práctica que acaban de completar.","Pedirles que esperen en silencio para no distraer a los compañeros que todavía trabajan.","Pedirles que ayuden a los compañeros con más dificultades para que todos terminen al mismo tiempo.","Avanzarles el contenido de la próxima unidad para aprovechar el tiempo disponible."],correct:0,
+   feedback:"Esperar en silencio desperdicia el potencial de aprendizaje. Ayudar a compañeros puede ser útil ocasionalmente pero no sustituye su propio proceso. Avanzar la próxima unidad sin planificación puede generar desfases. Las actividades de profundización son la respuesta correcta: mantienen al estudiante en el mismo resultado con mayor complejidad sin romper la secuencia planificada."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"El docente de Gastronomía quiere saber si sus estudiantes comprenden el concepto de mise en place. ¿Cuál evaluación formativa da la información más útil para ajustar la enseñanza?",
+   options:["Pedir que cada estudiante organice su estación de trabajo completa en cinco minutos y observar los resultados con lista de cotejo.","Preguntar a mano alzada quién entendió el concepto y quién necesita más explicación.","Aplicar un cuestionario de cinco preguntas sobre la definición y componentes del mise en place.","Pedir que expliquen con sus propias palabras qué es el mise en place en una frase corta."],correct:0,
+   feedback:"La mano alzada mide confianza subjetiva, no comprensión real. El cuestionario evalúa el saber declarativo. Explicar con propias palabras evalúa comprensión conceptual pero no aplicación. Solo pedir que organicen su estación real evalúa directamente si el estudiante puede usar el concepto —la información más útil para ajustar la enseñanza: no si saben definirlo, sino si pueden aplicarlo."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 3: Resultados de aprendizaje",
+   text:"La docente de Administración quiere implementar ABP (Aprendizaje Basado en Proyectos). Para que el proyecto sea auténtico, ¿cuál condición es más importante?",
+   options:["Que responda a un problema o necesidad real del entorno, cuya solución tenga valor más allá del aula.","Que tenga un plazo de entrega real con consecuencias académicas si no se entrega a tiempo.","Que sea evaluado por un experto externo al centro para garantizar objetividad.","Que integre contenidos de al menos tres unidades del módulo para garantizar su complejidad."],correct:0,
+   feedback:"El plazo con consecuencias es gestión, no autenticidad. La evaluación externa añade valor pero no define la autenticidad. Integrar tres unidades garantiza complejidad pero no autenticidad. La autenticidad en el ABP tiene un único criterio: que el problema sea real y que la solución tenga valor genuino para alguien fuera del contexto escolar."
+  },
+  {dim:"Gestión del Aprendizaje",dimClass:"dim-gestion",area:"Área 8: Trabajo en equipo",
+   text:"El docente de Refrigeración trabaja en un centro donde los docentes del mismo departamento no comparten planificaciones. ¿Cuál iniciativa es más coherente con el Área 8 (Trabajo en Equipo) de la EDD?",
+   options:["Proponer al coordinador la creación de un espacio formal de planificación colaborativa donde los docentes del departamento planifiquen juntos.","Compartir sus propias planificaciones con los colegas como ejemplo para que cada uno las adapte individualmente.","Planificar con el colega más cercano de forma informal cuando ambos tengan tiempo disponible.","Solicitar al director que establezca como norma la entrega de planificaciones compartidas entre docentes del mismo módulo."],correct:0,
+   feedback:"Compartir individualmente es divulgación, no trabajo en equipo. Planificar informalmente con un colega es colaboración bilateral, no institucional. Solicitar que se imponga como norma externaliza la iniciativa. Proponer formalmente un espacio de planificación colaborativa para el departamento combina iniciativa personal, alcance institucional y trabajo en equipo sistemático."
+  },
+  // ─ Comportamientos Profesionales (12 más → total ~42) ─
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"Durante el recreo, un estudiante se acerca al docente para hablar de un problema familiar que afecta su rendimiento. ¿Cuál es la respuesta ética y pedagógicamente más adecuada según el Art. 10c?",
+   options:["Escuchar brevemente, expresar apoyo y orientarlo hacia el Departamento de Orientación y Psicología del centro.","Escuchar con atención completa durante el recreo porque el bienestar emocional del estudiante es prioritario.","Acordar un encuentro durante la hora de clase de orientación para hablar con más espacio y tranquilidad.","Escuchar brevemente y comprometerse a conversar con más detalle al final de la jornada escolar en privado."],correct:0,
+   feedback:"Escuchar con atención completa durante el recreo y comprometerse a conversar más en privado al final crea una relación de apoyo directo que el Código reserva a los profesionales de orientación. El Art. 10c permite el acompañamiento concreto en beneficio del bienestar, y ese acompañamiento concreto es la referencia al orientador —no la conversación personal extendida."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente de Programación encuentra que un compañero publicó en redes sociales personales fotos de estudiantes sin autorización. ¿Cuál artículo aplica y qué debe hacer?",
+   options:["El Art. 10b, que regula el uso de herramientas tecnológicas con estudiantes; debe reportarlo a la Comisión de Ética.","El Art. 11b, que prohíbe trato irrespetuoso; debe hablar con el colega para que elimine las fotos.","El Art. 14f, que prohíbe declaraciones sobre casos del centro en medios; debe reportarlo a la dirección.","El Art. 13f, que regula la conducta en redes sociales; debe hablar primero y reportar si no corrige."],correct:0,
+   feedback:"El Art. 11b es sobre trato, no sobre manejo de imágenes. El Art. 14f aplica a declaraciones sobre casos a medios de comunicación. El Art. 13f regula conducta personal en redes pero no específicamente imágenes de estudiantes. El Art. 10b regula el uso de herramientas tecnológicas en la interacción con estudiantes —publicar fotos sin autorización viola ese artículo y debe reportarse a la Comisión de Ética."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"Una estudiante de 17 años le dice al docente que está embarazada y le pide que no lo diga a nadie. ¿Cuál es la obligación del docente?",
+   options:["Informar al orientador del centro para que active los protocolos de apoyo, sin divulgar la información innecesariamente.","Respetar la confidencialidad ya que es información personal de la estudiante.","Informar solo a los padres ya que es menor de edad y ellos tienen derecho a saberlo.","Informar a la dirección del centro para que se activen los protocolos institucionales."],correct:0,
+   feedback:"Guardar total confidencialidad puede dejar a la estudiante sin el apoyo especializado que necesita. Informar directamente a los padres viola su privacidad y puede generar conflicto familiar antes del acompañamiento. Informar a la dirección puede ser innecesariamente amplio. El orientador es el profesional competente para activar los protocolos de apoyo con el manejo confidencial adecuado que establecen las Normas de Convivencia (Art. 25)."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente técnico recibe de un colega la planificación completa del módulo del año anterior y la entrega como propia sin modificaciones. ¿Cuál artículo del Código se incumple más directamente?",
+   options:["El Art. 20e, que tipifica la presentación de documentos falsos o ajenos como propios.","El Art. 13d, que obliga a rendir cuentas de las acciones dentro del espacio escolar.","El Art. 18l, que tipifica los actos de preferencia por vínculos de amistad.","El Art. 13c, que exige mantener una conducta coherente con los valores éticos del rol docente."],correct:0,
+   feedback:"El Art. 13d es sobre rendición de cuentas. El Art. 18l aplica a favoritismo con estudiantes. El Art. 13c es un principio general de coherencia ética. El Art. 20e tipifica específicamente la presentación de documentos falsos o ajenos como propios —que es exactamente lo que describe el caso, sancionable con suspensión según el régimen disciplinario."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Un estudiante lleva tres semanas faltando sin justificación y el docente solo ha anotado las ausencias. ¿Qué obligación normativa está incumpliendo?",
+   options:["La obligación de notificar a los padres o tutores y comunicar la situación al orientador según el protocolo de ausentismo.","La obligación de informar al coordinador pedagógico sobre el rendimiento de los estudiantes.","La obligación de aplicar medidas disciplinarias por el incumplimiento del deber de asistencia.","La obligación de registrar las ausencias en el sistema del MINERD dentro de los plazos establecidos."],correct:0,
+   feedback:"Notificar al coordinador sobre rendimiento es seguimiento académico pero no el protocolo de ausentismo. Aplicar medidas disciplinarias sin proceso previo de contacto familiar viola el principio de que la sanción sigue al proceso. El registro en el sistema es un deber administrativo. Las Normas establecen que el ausentismo prolongado activa la obligación del docente de notificar a la familia y al orientador —acciones protectoras del estudiante."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"El docente nota que un estudiante que siempre participaba activamente ha dejado de hacerlo y parece triste. ¿Cuál es la acción más apropiada según el Código de Ética?",
+   options:["Buscar un momento privado y discreto para preguntarle cómo está y si hay algo que lo afecta, orientarlo al servicio de orientación.","Observar la situación durante más tiempo antes de actuar para no invadir la privacidad del estudiante.","Preguntarle directamente frente al grupo si le pasa algo para que los compañeros también estén al tanto.","Reportarlo directamente al orientador sin hablar con el estudiante para no generar incomodidad."],correct:0,
+   feedback:"Esperar más tiempo puede dejar al estudiante sin apoyo en un momento crítico. Preguntar frente al grupo viola la privacidad. Reportarlo sin interacción previa puede resultar en intervención percibida como invasiva. El Art. 10c orienta al docente a un acompañamiento concreto: el contacto discreto y privado con el estudiante primero, y la referencia al orientador si la situación lo requiere."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"La directora le pide al docente técnico impartir un módulo fuera de su especialidad porque no hay quien lo cubra. ¿Cuál es la postura ética correcta?",
+   options:["Expresar a la dirección sus limitaciones en esa área, proponer condiciones de apoyo o capacitación y, si acepta, comprometerse a prepararse.","Aceptar sin condiciones porque el principio de lealtad institucional obliga a cumplir lo que la dirección solicita.","Negarse porque el Código de Ética prohíbe impartir módulos fuera del área de formación del docente.","Aceptar provisionalmente y notificar al Distrito Educativo para que envíe un docente especializado."],correct:0,
+   feedback:"Aceptar sin condiciones puede comprometer la calidad del aprendizaje. El Código no prohíbe taxativamente la asignación fuera de especialidad en emergencias. Notificar al Distrito puede ser complementario. La postura correcta combina honestidad (declarar limitaciones), responsabilidad (proponer condiciones) y compromiso (prepararse si acepta) —los tres valores del Código que aplican simultáneamente."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 7: Formación continua",
+   text:"El docente técnico de Refrigeración lleva tres años sin actualizarse. El coordinador se lo señala en la evaluación anual. ¿Cuál es la implicación directa según el Área 7 de la EDD?",
+   options:["Que incumple su obligación de formación continua, lo que afecta la calidad y pertinencia de su enseñanza.","Que el centro debe gestionar capacitaciones institucionales para que se actualice en su área técnica.","Que debe justificar ante la Comisión de Ética por qué no se ha actualizado en su campo técnico.","Que el coordinador debe reportar la situación al Distrito para que se tomen medidas formales."],correct:0,
+   feedback:"La responsabilidad de la capacitación no recae exclusivamente en el centro. La Comisión de Ética interviene ante faltas tipificadas, no ante ausencia de actualización como primera instancia. El reporte al Distrito salta el proceso inmediato. El Área 7 es explícita: la formación continua es una obligación personal e intransferible del docente que afecta directamente la calidad y pertinencia de la enseñanza."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Un docente recibe dinero de un proveedor de equipos a cambio de recomendarlos al centro educativo. ¿En qué artículo se tipifica esta conducta y con qué sanción?",
+   options:["Art. 22d: aceptar sobornos o gratificaciones ilícitas para inclinar decisiones; sancionable con desvinculación del cargo.","Art. 18d: actos que pueden convertirse en abuso de poder; sancionable con amonestación escrita.","Art. 20d: recibir pagos adicionales al salario por funciones institucionales; sancionable con suspensión.","Art. 14d: abuso de poder por posición del docente; sancionable con amonestación escrita."],correct:0,
+   feedback:"El Art. 18d aplica a posibles abusos de poder, no a sobornos explícitos. El Art. 20d aplica a pagos por funciones institucionales en general. El Art. 14d tipifica abuso de posición sobre estudiantes. El Art. 22d es el que tipifica específicamente la aceptación de sobornos o gratificaciones ilícitas para inclinar decisiones institucionales —causal de desvinculación directa."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"El docente organiza la reunión anual con padres para presentar el Reglamento de Convivencia. ¿Cuál es la obligación normativa exacta según el Art. 12 de las Normas de Convivencia?",
+   options:["Socializar periódicamente los deberes del personal docente y administrativo con toda la comunidad educativa.","Presentar el reglamento a los padres para obtener su firma de conocimiento y aceptación.","Informar a los padres sobre las sanciones vigentes para que orienten a sus hijos desde el hogar.","Validar el reglamento de convivencia con la comunidad educativa antes de que entre en vigencia."],correct:0,
+   feedback:"Obtener firmas es parte del Art. 13, Párrafo II, no del Art. 12. Informar sobre sanciones es elemento parcial, no el propósito completo. Validar el reglamento es función del Equipo de Gestión al elaborarlo. El Art. 12 establece específicamente que la reunión anual tiene como objetivo 'socializar periódicamente los deberes del personal docente y administrativo' con toda la comunidad —no solo presentar el reglamento."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 5: Relaciones con estudiantes, colegas y comunidad",
+   text:"Algunos estudiantes imitan el acento del docente. Parecen hacerlo con afecto, no con malicia. ¿Cuál es la respuesta éticamente correcta?",
+   options:["Abordar la situación pedagógicamente reflexionando con el grupo sobre el respeto a la diversidad, independientemente de la intención.","No intervenir si el contexto es de afecto porque el Código solo prohíbe conductas con intención discriminatoria.","Intervenir solo si el docente personalmente se siente afectado, porque su dignidad también es un valor del Código.","Conversar en privado con los estudiantes más activos para aclarar que puede resultar irrespetuoso."],correct:0,
+   feedback:"La intención no determina la conducta prohibida: el Art. 14b prohíbe calificativos o conductas que 'puedan incomodar por su forma de expresarse' sin distinguir intención. Intervenir solo si el docente se siente afectado condiciona la acción ética a la subjetividad. La respuesta correcta aborda la situación pedagógicamente con todo el grupo porque la función del docente como modelo de conducta ética no depende de la intención de los estudiantes."
+  },
+  {dim:"Comportamientos Profesionales",dimClass:"dim-profesional",area:"Área 4: Cumplimiento de normas institucionales",
+   text:"Al finalizar el año, el docente técnico considera que no tiene nada que reportar en la Rendición de Cuentas porque no hubo incidentes éticos. ¿Es correcta esta postura?",
+   options:["No, porque la Rendición de Cuentas incluye el reporte positivo de prácticas éticas implementadas y áreas de mejora continua.","Sí, porque la Rendición de Cuentas solo tiene sentido cuando hubo faltas o incidentes que comunicar.","Sí, porque si no hubo incidentes el docente ha cumplido plenamente y no hay nada que rendir.","No, pero puede delegar su participación en el coordinador si considera que no tiene aportes significativos."],correct:0,
+   feedback:"La Rendición de Cuentas no es solo para reportar incidentes —esa interpretación confunde rendición ética con régimen disciplinario. Tampoco puede delegarse. El Art. 13h establece que todos deben rendir cuentas de 'la aplicación y compromiso con los lineamientos éticos', incluyendo buenas prácticas, aprendizajes del año y áreas de mejora —que siempre existen independientemente de si hubo incidentes."
+  }
+];
+
+// Combinar todo en un solo array de 120
+rawQuestions.push(...extraQuestions);
+
+/* =========================================================
+   LÓGICA DEL SIMULADOR — 3 INTENTOS × 40 PREGUNTAS
+   El banco tiene 120 preguntas. Se dividen aleatoriamente
+   en 3 bloques de 40. Cada intento usa un bloque distinto.
+   ========================================================= */
+
+let allBlocks       = [];   // 3 arrays de 40 preguntas c/u
+let currentBlock    = 0;    // 0, 1, 2
+let shuffledQuestions = [];
+let currentQ        = 0;
+let answers         = [];
+
+// ── CRONÓMETRO ──────────────────────────────────────────
+let timerInterval = null;
+let timerSeconds  = 0;
+let timerFinalStr = '00:00:00';
+
+function timerFormat(s) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
+}
+function timerStart() {
+  timerSeconds = 0;
+  clearInterval(timerInterval);
+  const display = document.getElementById('timer-display');
+  const dot     = document.getElementById('timer-dot');
+  display.className   = 'timer-display running';
+  dot.className       = 'timer-dot';
+  display.textContent = '00:00:00';
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    display.textContent = timerFormat(timerSeconds);
+  }, 1000);
+}
+function timerStop() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerFinalStr = timerFormat(timerSeconds);
+  const display = document.getElementById('timer-display');
+  const dot     = document.getElementById('timer-dot');
+  display.className   = 'timer-display stopped';
+  dot.className       = 'timer-dot stopped';
+  display.textContent = timerFinalStr;
+}
+function timerReset() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  timerSeconds  = 0;
+  timerFinalStr = '00:00:00';
+  const display = document.getElementById('timer-display');
+  const dot     = document.getElementById('timer-dot');
+  display.className   = 'timer-display';
+  dot.className       = 'timer-dot stopped';
+  display.textContent = '00:00:00';
+}
+
+// ── UTILIDADES ───────────────────────────────────────────
+function toggleCard(card) { card.classList.toggle('open'); }
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── PREPARAR LOS 3 BLOQUES DE 40 ────────────────────────
+function buildBlocks() {
+  const shuffled = shuffleArray(rawQuestions);
+  allBlocks = [
+    shuffled.slice(0, 40),
+    shuffled.slice(40, 80),
+    shuffled.slice(80, 120)
+  ];
+  currentBlock = 0;
+}
+
+// ── PREPARAR LAS PREGUNTAS DEL BLOQUE ACTUAL ─────────────
+function prepareQuestions() {
+  shuffledQuestions = allBlocks[currentBlock].map(q => {
+    const opts = q.options.map((txt, idx) => ({ txt, isCorrect: idx === q.correct }));
+    const shuffled = shuffleArray(opts);
+    const newCorrect = shuffled.findIndex(o => o.isCorrect);
+    return { ...q, options: shuffled.map(o => o.txt), correct: newCorrect };
+  });
+  answers = new Array(shuffledQuestions.length).fill(null);
+}
+
+// ── INICIAR SIMULADOR ────────────────────────────────────
+function startQuiz() {
+  buildBlocks();
+  prepareQuestions();
+  document.getElementById('intro-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display  = 'block';
+  updateAttemptBadge();
+  timerStart();
+  renderQuestion();
+}
+
+function updateAttemptBadge() {
+  const badge = document.getElementById('attempt-badge');
+  if (badge) badge.textContent = `Intento ${currentBlock + 1} de 3`;
+}
+
+// ── RENDERIZAR PREGUNTA ──────────────────────────────────
+function renderQuestion() {
+  const q = shuffledQuestions[currentQ];
+  const card = document.getElementById('question-card');
+  card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'fadeIn 0.35s ease';
+
+  document.getElementById('q-number').textContent = `CASO ${currentQ + 1} DE 40`;
+  document.getElementById('q-counter').textContent = `${currentQ + 1} / 40`;
+  document.getElementById('dim-tag').textContent   = q.dim;
+  document.getElementById('dim-tag').className     = `dimension-tag ${q.dimClass}`;
+  document.getElementById('q-text').textContent    = q.text;
+  document.getElementById('area-tag').textContent  = q.area;
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+
+  const fb = document.getElementById('feedback-box');
+  fb.className = 'feedback-box';
+  fb.style.display = 'none';
+
+  const done = answers.filter(a => a !== null).length;
+  document.getElementById('progress-bar').style.width = `${(done / 40) * 100}%`;
+  document.getElementById('score-counter').textContent = `${done} / 40 respondidas`;
+
+  const prev = document.getElementById('btn-prev');
+  const next = document.getElementById('btn-next');
+  prev.disabled = currentQ === 0;
+
+  if (answers[currentQ] !== null) {
+    revealAnswer(answers[currentQ]);
+    next.textContent = currentQ === shuffledQuestions.length - 1 ? 'Ver Resultados →' : 'Siguiente →';
+  } else {
+    next.disabled = true;
+    next.textContent = currentQ === shuffledQuestions.length - 1 ? 'Ver Resultados →' : 'Siguiente →';
+  }
+}
+
+function selectAnswer(idx) {
+  if (answers[currentQ] !== null) return;
+  answers[currentQ] = idx;
+  revealAnswer(idx);
+  document.getElementById('btn-next').disabled = false;
+  const done = answers.filter(a => a !== null).length;
+  document.getElementById('progress-bar').style.width = `${(done / 40) * 100}%`;
+  document.getElementById('score-counter').textContent = `${done} / 40 respondidas`;
+}
+
+function revealAnswer(selectedIdx) {
+  const q = shuffledQuestions[currentQ];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    else if (i === selectedIdx && selectedIdx !== q.correct) btn.classList.add('wrong');
+  });
+  const fb = document.getElementById('feedback-box');
+  const isCorrect = selectedIdx === q.correct;
+  fb.className = `feedback-box ${isCorrect ? 'correct-fb' : 'wrong-fb'}`;
+  document.getElementById('feedback-title').textContent = isCorrect ? '✓ Respuesta correcta' : '✗ Respuesta incorrecta';
+  document.getElementById('feedback-text').textContent  = q.feedback;
+  fb.style.display = 'block';
+}
+
+function nextQuestion() {
+  if (currentQ === shuffledQuestions.length - 1) showResults();
+  else { currentQ++; renderQuestion(); }
+}
+
+function prevQuestion() {
+  if (currentQ > 0) { currentQ--; renderQuestion(); }
+}
+
+// ── MOSTRAR RESULTADOS ───────────────────────────────────
+function showResults() {
+  document.getElementById('quiz-screen').style.display    = 'none';
+  document.getElementById('results-screen').style.display = 'block';
+  timerStop();
+  document.getElementById('res-time').textContent = timerFinalStr;
+
+  const score = answers.filter((a, i) => a === shuffledQuestions[i].correct).length;
+  const pct   = Math.round(score / shuffledQuestions.length * 100);
+
+  document.getElementById('res-score').textContent   = pct + '%';
+  document.getElementById('res-correct').textContent = score;
+  document.getElementById('res-wrong').textContent   = shuffledQuestions.length - score;
+  document.getElementById('res-attempt').textContent = `Intento ${currentBlock + 1} de 3`;
+
+  let msg, sub;
+  if      (pct >= 90) { msg = 'Excelente desempeño profesional';  sub = 'Dominas sólidamente las competencias requeridas para el ERP. Estás muy bien preparado/a.'; }
+  else if (pct >= 75) { msg = 'Buen nivel de preparación';         sub = 'Tienes buen dominio general. Revisa las áreas con dificultad que se muestran abajo.'; }
+  else if (pct >= 60) { msg = 'Preparación en progreso';           sub = 'Hay áreas que requieren refuerzo. Identifícalas en el desglose y relee los documentos normativos.'; }
+  else                { msg = 'Necesitas más práctica';            sub = 'Te recomendamos releer los documentos antes de reintentar. El desglose muestra dónde enfocar el estudio.'; }
+
+  document.getElementById('res-msg').textContent = msg;
+  document.getElementById('res-sub').textContent = sub;
+
+  // Botón siguiente intento o reinicio total
+  const btnNext = document.getElementById('btn-next-attempt');
+  const btnReset = document.getElementById('btn-reset-all');
+  if (currentBlock < 2) {
+    btnNext.style.display  = 'inline-flex';
+    btnReset.style.display = 'none';
+    btnNext.textContent    = `▶ Iniciar Intento ${currentBlock + 2}`;
+  } else {
+    btnNext.style.display  = 'none';
+    btnReset.style.display = 'inline-flex';
+  }
+
+  buildBreakdown();
+}
+
+function buildBreakdown() {
+  const dimMap = {
+    'Planificación Pedagógica': { label:'Planificación Pedagógica', areas:['Área 1: Nivel de formación académica','Área 2: Aplicación del currículo','Área 3: Resultados de aprendizaje'] },
+    'Gestión del Aprendizaje':  { label:'Gestión del Aprendizaje',  areas:['Área 3: Resultados de aprendizaje','Área 6: Liderazgo en el trabajo','Área 8: Trabajo en equipo'] },
+    'Comportamientos Profesionales': { label:'Comportamientos Profesionales', areas:['Área 4: Cumplimiento de normas institucionales','Área 5: Relaciones con estudiantes, colegas y comunidad','Área 6: Liderazgo en el trabajo','Área 7: Formación continua','Área 8: Trabajo en equipo'] }
+  };
+  const areaShortNames = {
+    'Área 1: Nivel de formación académica':'Área 1 · Formación académica',
+    'Área 2: Aplicación del currículo':'Área 2 · Aplicación del currículo',
+    'Área 3: Resultados de aprendizaje':'Área 3 · Resultados de aprendizaje',
+    'Área 4: Cumplimiento de normas institucionales':'Área 4 · Normas institucionales',
+    'Área 5: Relaciones con estudiantes, colegas y comunidad':'Área 5 · Relaciones con la comunidad',
+    'Área 6: Liderazgo en el trabajo':'Área 6 · Liderazgo',
+    'Área 7: Formación continua':'Área 7 · Formación continua',
+    'Área 8: Trabajo en equipo':'Área 8 · Trabajo en equipo'
+  };
+
+  const dimStats = {}, areaStats = {};
+  shuffledQuestions.forEach((q, i) => {
+    const isOk = answers[i] === q.correct;
+    const d = q.dim;
+    if (!dimStats[d]) dimStats[d] = { correct:0, total:0 };
+    dimStats[d].total++; if (isOk) dimStats[d].correct++;
+    const a = q.area.replace(/\(.*?\)/g,'').trim();
+    if (!areaStats[a]) areaStats[a] = { correct:0, total:0 };
+    areaStats[a].total++; if (isOk) areaStats[a].correct++;
+  });
+
+  function colorClass(p) {
+    if (p >= 75) return { pct:'pct-green', bar:'bar-green' };
+    if (p >= 50) return { pct:'pct-yellow', bar:'bar-yellow' };
+    return { pct:'pct-red', bar:'bar-red' };
+  }
+
+  let dimHTML = '';
+  Object.entries(dimMap).forEach(([dimKey, dimInfo]) => {
+    const ds = dimStats[dimKey] || { correct:0, total:0 };
+    if (ds.total === 0) return;
+    const dp = Math.round(ds.correct / ds.total * 100);
+    const dc = colorClass(dp);
+    let areaRowsHTML = '';
+    const seen = new Set();
+    dimInfo.areas.forEach(aKey => {
+      if (seen.has(aKey)) return; seen.add(aKey);
+      const as = areaStats[aKey] || { correct:0, total:0 };
+      if (as.total === 0) return;
+      const ap = Math.round(as.correct / as.total * 100);
+      const ac = colorClass(ap);
+      areaRowsHTML += `<div class="area-row"><span class="area-row-label">${areaShortNames[aKey]||aKey}</span><div class="area-row-bar-outer"><div class="area-row-bar-inner ${ac.bar}" style="width:${ap}%"></div></div><span class="area-row-score ${ac.pct}">${as.correct}/${as.total}</span></div>`;
+    });
+    dimHTML += `<div class="dim-block"><div class="dim-block-header"><span class="dim-block-name">${dimInfo.label}</span><div class="dim-block-stat"><span class="dim-block-pct ${dc.pct}">${dp}%</span><span class="dim-block-fraction">${ds.correct}/${ds.total}</span></div></div><div class="dim-bar-outer"><div class="dim-bar-inner ${dc.bar}" style="width:${dp}%"></div></div><div class="area-rows">${areaRowsHTML}</div></div>`;
+  });
+  document.getElementById('dim-breakdown').innerHTML = dimHTML;
+
+  const chips = Object.entries(areaStats).map(([k,v]) => ({
+    key:k, short:areaShortNames[k]||k, pct: v.total>0?Math.round(v.correct/v.total*100):100
+  })).sort((a,b)=>a.pct-b.pct);
+  document.getElementById('priority-chips').innerHTML = chips.map(a =>
+    `<span class="priority-chip ${a.pct>=75?'ok':''}">${a.short} · ${a.pct}%</span>`
+  ).join('') || '<span style="color:#666;font-size:0.8rem">Sin datos suficientes</span>';
+}
+
+// ── SIGUIENTE INTENTO ────────────────────────────────────
+function nextAttempt() {
+  currentBlock++;
+  prepareQuestions();
+  currentQ = 0;
+  document.getElementById('results-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display    = 'block';
+  document.getElementById('progress-bar').style.width     = '0%';
+  document.getElementById('score-counter').textContent    = '0 / 40 respondidas';
+  updateAttemptBadge();
+  timerReset();
+  timerStart();
+  renderQuestion();
+}
+
+// ── REINICIAR DESDE CERO (después de los 3 intentos) ────
+function resetAll() {
+  buildBlocks();
+  prepareQuestions();
+  currentQ = 0;
+  document.getElementById('results-screen').style.display = 'none';
+  document.getElementById('intro-screen').style.display   = 'block';
+  document.getElementById('progress-bar').style.width     = '0%';
+  document.getElementById('score-counter').textContent    = '0 / 40 respondidas';
+  timerReset();
+}
+
+// ── GENERADOR DE INFORME PDF ─────────────────────────────
+function generarPDF() {
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true;
+  btn.textContent = '⏳ Cargando módulo PDF...';
+
+  function cargarJsPDF(callback) {
+    if (window.jspdf && window.jspdf.jsPDF) { callback(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload  = () => { btn.textContent = '⏳ Generando PDF...'; callback(); };
+    script.onerror = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js';
+      s2.onload  = () => { btn.textContent = '⏳ Generando PDF...'; callback(); };
+      s2.onerror = () => {
+        btn.disabled = false; btn.innerHTML = '⬇ Descargar Informe PDF';
+        alert('No se pudo cargar el módulo de PDF. Verifique su conexión e intente nuevamente.');
+      };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(script);
+  }
+
+  cargarJsPDF(() => {
+    try { const { jsPDF } = window.jspdf; construirPDF(jsPDF); }
+    catch(e) { console.error(e); alert('Error al generar el PDF: ' + e.message); }
+    finally { btn.disabled = false; btn.innerHTML = '⬇ Descargar Informe PDF'; }
+  });
+}
+
+function construirPDF(jsPDF) {
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const PW=210, PH=297, ML=14, MR=14, MT=16, MB=16, CW=PW-ML-MR;
+
+  const NEGRO=[13,13,13],OSCURO=[26,26,26],MEDIO=[46,46,46],BLANCO=[248,245,240];
+  const GRIS=[160,160,160],GRIS2=[100,100,100],VERDE=[29,185,84],DORADO=[201,148,58];
+  const CORREC=[46,169,106],WRONG=[200,100,20],CORREC_BG=[10,40,20],WRONG_BG=[40,20,5];
+
+  const score  = answers.filter((a,i)=>a===shuffledQuestions[i].correct).length;
+  const pct    = Math.round(score/shuffledQuestions.length*100);
+  const total  = shuffledQuestions.length;
+  const fecha  = new Date().toLocaleDateString('es-DO',{day:'2-digit',month:'long',year:'numeric'});
+  const tiempo = timerFinalStr;
+  const letters= ['A','B','C','D'];
+  const PCTC   = pct>=75?CORREC:pct>=60?DORADO:WRONG;
+
+  let pageNum=0, y=MT;
+  const sf=c=>doc.setFillColor(...c), ss=c=>doc.setDrawColor(...c), sc=c=>doc.setTextColor(...c);
+
+  function bg(){ sf(NEGRO); doc.rect(0,0,PW,PH,'F'); }
+  function footer(){
+    sf(OSCURO); doc.rect(0,PH-9,PW,9,'F');
+    ss(VERDE); doc.setLineWidth(0.3); doc.line(0,PH-9,PW,PH-9);
+    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); sc(GRIS2);
+    doc.text(`Simulador ERP · Intento ${currentBlock+1} de 3 · MINERD`,ML,PH-3.5);
+    doc.text(`Página ${pageNum}`,PW-MR,PH-3.5,{align:'right'});
+  }
+  function addPage(){ doc.addPage(); pageNum++; bg(); footer(); y=MT; }
+  function wrap(txt,maxW,fs,fw){ doc.setFontSize(fs); doc.setFont('helvetica',fw||'normal'); return doc.splitTextToSize(txt,maxW); }
+  function checkSpace(need){ if(y+need>PH-MB-9) addPage(); }
+  function filledRect(x,ry,rw,rh,fill,stroke){
+    sf(fill); doc.rect(x,ry,rw,rh,stroke?'FD':'F');
+    if(stroke){ ss(stroke); doc.setLineWidth(0.25); doc.rect(x,ry,rw,rh); }
+  }
+
+  // PORTADA
+  pageNum=1; bg(); footer();
+  sf(OSCURO); doc.rect(0,0,PW,50,'F');
+  ss(VERDE); doc.setLineWidth(0.8); doc.line(0,50,PW,50);
+  sf(VERDE); doc.rect(ML,9,20,9,'F');
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); sc(NEGRO);
+  doc.text('ERP',ML+10,15.5,{align:'center'});
+  doc.setFontSize(14); sc(BLANCO);
+  doc.text(`Informe de Resultados — Intento ${currentBlock+1} de 3`,ML+24,15);
+  doc.setFontSize(7.5); doc.setFont('helvetica','normal'); sc(GRIS);
+  doc.text('EJERCICIO DE RENDIMIENTO PROFESIONAL · TÉCNICO PROFESIONAL',ML+24,21);
+  doc.text('Ministerio de Educación de la República Dominicana',ML,32);
+  doc.text(`Fecha: ${fecha}`,ML,38); doc.text(`Tiempo: ${tiempo}`,ML,44);
+
+  y=58;
+  filledRect(ML,y,CW,34,OSCURO); ss(VERDE); doc.setLineWidth(0.3); doc.rect(ML,y,CW,34);
+  doc.setFontSize(30); doc.setFont('helvetica','bold'); sc(PCTC);
+  doc.text(`${pct}%`,PW/2,y+19,{align:'center'});
+  doc.setFontSize(7); doc.setFont('helvetica','normal'); sc(GRIS);
+  doc.text('PUNTUACIÓN FINAL',PW/2,y+27,{align:'center'});
+
+  y+=41; const bw=(CW-8)/3;
+  [{val:String(score),label:'CORRECTAS',color:CORREC,bg:CORREC_BG},
+   {val:String(total-score),label:'INCORRECTAS',color:WRONG,bg:WRONG_BG},
+   {val:tiempo,label:'TIEMPO',color:DORADO,bg:OSCURO}
+  ].forEach((item,i)=>{
+    const bx=ML+i*(bw+4);
+    filledRect(bx,y,bw,17,item.bg); ss(item.color); doc.setLineWidth(0.25); doc.rect(bx,y,bw,17);
+    doc.setFontSize(i===2?9:13); doc.setFont('helvetica','bold'); sc(item.color);
+    doc.text(item.val,bx+bw/2,y+10,{align:'center'});
+    doc.setFontSize(6); doc.setFont('helvetica','normal'); sc(GRIS);
+    doc.text(item.label,bx+bw/2,y+15,{align:'center'});
+  });
+
+  y+=23;
+  const msgs=['','Excelente desempeño profesional','Buen nivel de preparación','Preparación en progreso','Necesita más práctica'];
+  const mIdx=pct>=90?1:pct>=75?2:pct>=60?3:4;
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); sc(PCTC);
+  doc.text(msgs[mIdx],PW/2,y,{align:'center'});
+
+  y+=7;
+  const sus=wrap('Sustentado en: Componente Académico Técnico Profesional y Artes · Estándares Profesionales y del Desempeño Docente · Ley 136-03 · Código de Ética Docente (OD 22/2023)',CW,6.5,'italic');
+  sc(GRIS2); sus.forEach(l=>{doc.text(l,PW/2,y,{align:'center'}); y+=4;});
+
+  y+=3; ss(VERDE); doc.setLineWidth(0.3); doc.line(ML,y,PW-MR,y);
+  y+=6; doc.setFontSize(8.5); doc.setFont('helvetica','bold'); sc(BLANCO);
+  doc.text('Detalle de los 40 casos respondidos',PW/2,y,{align:'center'});
+  y+=4; doc.setFontSize(6.5); doc.setFont('helvetica','normal'); sc(GRIS);
+  doc.text('Respuesta seleccionada, respuesta correcta y retroalimentación normativa de cada caso.',PW/2,y,{align:'center'});
+
+  // CASOS
+  addPage();
+  const LH_Q=4.8, LH_O=4.3, LH_F=4.2;
+
+  shuffledQuestions.forEach((q,idx)=>{
+    const userAns=answers[idx], isOk=userAns===q.correct;
+    const ACCENT=isOk?CORREC:WRONG, FB_BG=isOk?CORREC_BG:WRONG_BG;
+
+    const qLines=wrap(q.text,CW-4,8.5,'bold');
+    let optH=0;
+    q.options.forEach((_,oi)=>{
+      const tagged=(oi===userAns)||(oi===q.correct);
+      const L=wrap(q.options[oi],tagged?CW-38:CW-11,7.8);
+      optH+=L.length*LH_O+(tagged?LH_O+1:0)+4+1.5;
+    });
+    const fbLines=wrap(q.feedback,CW-6,7.2);
+    checkSpace(Math.min(7+qLines.length*LH_Q+2+optH+2+fbLines.length*LH_F+10,60));
+
+    filledRect(ML,y,CW,6.5,isOk?CORREC_BG:WRONG_BG);
+    ss(ACCENT); doc.setLineWidth(0.25); doc.rect(ML,y,CW,6.5);
+    doc.setFontSize(6.5); doc.setFont('helvetica','bold'); sc(ACCENT);
+    doc.text(`CASO ${idx+1} DE 40`,ML+2,y+4.5);
+    doc.text(isOk?'CORRECTA':'INCORRECTA',PW-MR-2,y+4.5,{align:'right'});
+    y+=7.5;
+
+    checkSpace(qLines.length*LH_Q+2);
+    doc.setFontSize(8.5); doc.setFont('helvetica','bold'); sc(BLANCO);
+    qLines.forEach(l=>{doc.text(l,ML,y); y+=LH_Q;}); y+=2;
+
+    q.options.forEach((opt,oi)=>{
+      const isUser=oi===userAns, isCor=oi===q.correct, tagged=isUser||isCor;
+      const textMaxW=tagged?CW-38:CW-11;
+      const optLines=wrap(opt,textMaxW,7.8);
+      const tag=(isUser&&isCor)?'< Tu respuesta (correcta)':isCor?'< Respuesta correcta':'< Tu respuesta (incorrecta)';
+      const oh=optLines.length*LH_O+(tagged?LH_O+1:0)+4;
+      checkSpace(oh+1);
+      let obg=OSCURO, oCol=GRIS, oBorder=null;
+      if(isCor){obg=CORREC_BG;oCol=CORREC;oBorder=CORREC;}
+      else if(isUser){obg=WRONG_BG;oCol=WRONG;oBorder=WRONG;}
+      filledRect(ML,y,CW,oh,obg,oBorder);
+      const cx=ML+4, cy=y+oh/2;
+      sf(oBorder||MEDIO); doc.circle(cx,cy,2.3,'F');
+      doc.setFontSize(6.5); doc.setFont('helvetica','bold');
+      sc(obg===OSCURO?GRIS:NEGRO);
+      doc.text(letters[oi],cx,cy+0.9,{align:'center'});
+      doc.setFontSize(7.8); doc.setFont('helvetica',tagged?'bold':'normal'); sc(oCol);
+      optLines.forEach((ol,li)=>doc.text(ol,ML+9,y+3.5+li*LH_O));
+      if(tagged){
+        const tagY=y+2.5+optLines.length*LH_O+1.5;
+        doc.setFontSize(6.2); doc.setFont('helvetica','bolditalic');
+        sc(isCor?CORREC:WRONG); doc.text(tag,ML+9,tagY);
+      }
+      y+=oh+1.5;
+    });
+    y+=2;
+
+    const fbH=fbLines.length*LH_F+9;
+    checkSpace(fbH+2);
+    filledRect(ML,y,CW,fbH,FB_BG,ACCENT);
+    sf(ACCENT); doc.rect(ML+2,y+1.5,32,4,'F');
+    doc.setFontSize(6); doc.setFont('helvetica','bold'); sc(NEGRO);
+    doc.text('RETROALIMENTACION',ML+18,y+4.5,{align:'center'});
+    doc.setFontSize(7.2); doc.setFont('helvetica','normal');
+    sc(isOk?[180,255,210]:[255,210,140]);
+    fbLines.forEach((fl,fi)=>doc.text(fl,ML+2.5,y+8+fi*LH_F));
+    y+=fbH+2;
+
+    checkSpace(5);
+    doc.setFontSize(6.2); doc.setFont('helvetica','italic'); sc(GRIS2);
+    doc.text(`${q.dim}  ·  ${q.area}`,ML,y); y+=4;
+    checkSpace(5);
+    ss(MEDIO); doc.setLineWidth(0.15); doc.line(ML,y,PW-MR,y); y+=5;
+  });
+
+  doc.save(`Informe_ERP_Intento${currentBlock+1}_${fecha.replace(/\s/g,'_').replace(/,/g,'')}.pdf`);
+}
+</script>
+</body>
+</html>
