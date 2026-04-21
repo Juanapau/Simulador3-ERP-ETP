@@ -27,7 +27,7 @@
   .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--verde), var(--dorado)); border-radius: 3px; transition: width 0.5s ease; }
   .score-counter { font-size: 0.75rem; color: var(--dorado); font-weight: 600; }
 
-  main { max-width: 860px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
+  main { max-width: 100%; margin: 0; padding: 0; }
 
   .dimension-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; padding: 0.28rem 0.75rem; border-radius: 2px; margin-bottom: 1rem; }
   .dim-planificacion { background: #1A3D6E; color: #8ec6ff; }
@@ -224,6 +224,120 @@
     .question-card { padding: 1.4rem 1.2rem; }
     .nav-row { flex-wrap: wrap; }
   }
+
+  /* ── PANEL LATERAL DE NAVEGACIÓN ── */
+  /* ── LAYOUT: panel izquierdo 20% + contenido derecho 80% ── */
+
+  .quiz-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  /* ── PANEL IZQUIERDO 20% ── */
+  .nav-panel {
+    width: 30%;
+    flex-shrink: 0;
+    background: #0d1f0e;
+    border-right: 2px solid #1e4a20;
+    padding: 0.8rem 0.7rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-content: flex-start;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+  .nav-panel::-webkit-scrollbar { width: 3px; }
+  .nav-panel::-webkit-scrollbar-thumb { background: #2a4a2a; border-radius: 2px; }
+
+  .nav-panel-title {
+    width: 100%;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #5a9a5a;
+    margin-bottom: 0.3rem;
+  }
+
+  .nav-legend {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 0.7rem;
+  }
+  .nav-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.58rem;
+    color: #aaa;
+    line-height: 1.2;
+  }
+  .nav-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── BOTONES ── */
+  .q-btn {
+    aspect-ratio: 1 / 1;
+    width: calc(16.66% - 5px);
+    border-radius: 4px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  }
+
+  /* SIN RESPONDER — verde oscuro, texto blanco */
+  .q-btn.unanswered {
+    background: #1a4a1a;
+    color: #d4f5d4;
+  }
+  .q-btn.unanswered:hover { background: #245c24; transform: scale(1.05); }
+
+  /* YA RESPONDIDA — verde claro, texto blanco */
+  .q-btn.answered {
+    background: #4caf50;
+    color: #ffffff;
+  }
+  .q-btn.answered:hover { background: #43a047; }
+
+  /* PREGUNTA ACTUAL — gris oscuro, texto blanco, borde blanco */
+  .q-btn.current {
+    background: #424242;
+    color: #ffffff;
+    box-shadow: 0 0 0 2px #ffffff;
+    transform: scale(1.08);
+    font-weight: 800;
+  }
+
+  /* ── CONTENIDO DERECHO 80% ── */
+  .quiz-content {
+    width: 70%;
+    flex-shrink: 0;
+    padding: 1.2rem 1.8rem 2rem;
+    min-width: 0;
+  }
+
+  @media (max-width: 768px) {
+    .quiz-layout { flex-direction: column; }
+    .nav-panel { width: 100%; position: static; max-height: none;
+                 border-right: none; border-bottom: 2px solid #1e4a20; }
+    .quiz-content { width: 100%; padding: 0.8rem; }
+    .q-btn { width: calc(16.66% - 5px); aspect-ratio: 1/1; font-size: 0.8rem; }
+  }
+
 </style>
 </head>
 <body>
@@ -322,6 +436,9 @@
   </div>
 
   <div id="quiz-screen" style="display:none">
+  <div class="quiz-layout">
+  <div class="nav-panel" id="nav-panel"></div>
+  <div class="quiz-content">
     <div class="question-card" id="question-card">
       <div class="question-number" id="q-number">CASO 1 DE 50</div>
       <span class="dimension-tag" id="dim-tag"></span>
@@ -338,7 +455,9 @@
       <span class="q-counter" id="q-counter">1 / 50</span>
       <button class="btn-nav btn-next" id="btn-next" onclick="nextQuestion()">Siguiente &#8594;</button>
     </div>
-  </div>
+  </div><!-- quiz-content -->
+  </div><!-- quiz-layout -->
+  </div><!-- quiz-screen -->
 
   <div id="results-screen">
     <div class="result-badge" id="res-score"></div>
@@ -1121,6 +1240,7 @@ function prepareQuestions() {
 function startQuiz() {
   buildBlocks();
   prepareQuestions();
+  buildNavPanel();
   document.getElementById('intro-screen').style.display = 'none';
   document.getElementById('quiz-screen').style.display  = 'block';
   updateAttemptBadge();
@@ -1138,6 +1258,7 @@ function renderQuestion() {
   const q = shuffledQuestions[currentQ];
   const card = document.getElementById('question-card');
   card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'fadeIn 0.35s ease';
+  updateNavPanel();
 
   document.getElementById('q-number').textContent = `CASO ${currentQ + 1} DE 40`;
   document.getElementById('q-counter').textContent = `${currentQ + 1} / 40`;
@@ -1205,6 +1326,7 @@ function revealAnswer(selectedIdx) {
 }
 
 function nextQuestion() {
+  window.scrollTo({top: 0, behavior: "smooth"});
   if (currentQ === shuffledQuestions.length - 1) showResults();
   else { currentQ++; renderQuestion(); }
 }
@@ -1533,6 +1655,62 @@ function construirPDF(jsPDF) {
 
   doc.save(`Informe_ERP_Intento${currentBlock+1}_${fecha.replace(/\s/g,'_').replace(/,/g,'')}.pdf`);
 }
+
+// ── NAV PANEL ────────────────────────────────────────────────
+function buildNavPanel() {
+  const panel = document.getElementById('nav-panel');
+  if (!panel) return;
+  panel.innerHTML = '';
+
+  // Título
+  const title = document.createElement('div');
+  title.className = 'nav-panel-title';
+  title.textContent = 'Casos';
+  panel.appendChild(title);
+
+  // Leyenda
+  const legend = document.createElement('div');
+  legend.className = 'nav-legend';
+  legend.innerHTML = `
+    <span class="nav-legend-item"><span class="nav-legend-dot" style="background:#1a4a1a;border:1px solid #2ea96a"></span>Sin responder</span>
+    <span class="nav-legend-item"><span class="nav-legend-dot" style="background:#4caf50"></span>Respondida</span>
+    <span class="nav-legend-item"><span class="nav-legend-dot" style="background:#3a3a3a;box-shadow:0 0 0 2px #fff"></span>Actual</span>
+  `;
+  panel.appendChild(legend);
+
+  // Botones
+  for (let i = 0; i < shuffledQuestions.length; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'q-btn unanswered';
+    btn.id = 'qbtn-' + i;
+    btn.textContent = i + 1;
+    btn.onclick = (function(idx){ return function(){ jumpToQuestion(idx); }; })(i);
+    panel.appendChild(btn);
+  }
+}
+
+function updateNavPanel() {
+  for (let i = 0; i < shuffledQuestions.length; i++) {
+    const btn = document.getElementById('qbtn-' + i);
+    if (!btn) continue;
+    if (i === currentQ) {
+      btn.className = 'q-btn current';
+    } else if (answers[i] !== null) {
+      btn.className = 'q-btn answered';
+    } else {
+      btn.className = 'q-btn unanswered';
+    }
+  }
+  // Scroll active button into view
+  const activeBtn = document.getElementById('qbtn-' + currentQ);
+  if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function jumpToQuestion(idx) {
+  currentQ = idx;
+  renderQuestion();
+}
+
 </script>
 </body>
 </html>
