@@ -1269,11 +1269,11 @@ function updateAttemptBadge() {
 }
 
 // ── RENDERIZAR PREGUNTA ──────────────────────────────────
-function renderQuestion() {
+function renderQuestion(skipScroll) {
   const q = shuffledQuestions[currentQ];
   const card = document.getElementById('question-card');
   card.style.animation = 'none'; void card.offsetWidth; card.style.animation = 'fadeIn 0.35s ease';
-  updateNavPanel();
+  updateNavPanel(skipScroll);
 
   document.getElementById('q-number').textContent = `CASO ${currentQ + 1} DE 40`;
   document.getElementById('q-counter').textContent = `${currentQ + 1} / 40`;
@@ -1318,6 +1318,7 @@ function selectAnswer(idx) {
   if (answers[currentQ] !== null) return;
   answers[currentQ] = idx;
   revealAnswer(idx);
+  updateNavPanel(true);  // update colors, skip scroll
   document.getElementById('btn-next').disabled = false;
   const done = answers.filter(a => a !== null).length;
   document.getElementById('progress-bar').style.width = `${(done / 40) * 100}%`;
@@ -1706,7 +1707,7 @@ function buildNavPanel() {
   }
 }
 
-function updateNavPanel() {
+function updateNavPanel(skipScroll) {
   for (let i = 0; i < shuffledQuestions.length; i++) {
     const btn = document.getElementById('qbtn-' + i);
     if (!btn) continue;
@@ -1719,8 +1720,10 @@ function updateNavPanel() {
     }
   }
   // Scroll active button into view
-  const activeBtn = document.getElementById('qbtn-' + currentQ);
-  if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (!skipScroll) {
+    const activeBtn = document.getElementById('qbtn-' + currentQ);
+    if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
 }
 
 function jumpToQuestion(idx) {
