@@ -331,11 +331,26 @@
   }
 
   @media (max-width: 768px) {
-    .quiz-layout { flex-direction: column; }
-    .nav-panel { width: 100%; position: static; max-height: none;
-                 border-right: none; border-bottom: 2px solid #1e4a20; }
-    .quiz-content { width: 100%; padding: 0.8rem; }
-    .q-btn { width: calc(16.66% - 5px); aspect-ratio: 1/1; font-size: 0.8rem; }
+    .quiz-layout {
+      flex-direction: column;
+    }
+    .nav-panel {
+      width: 100%;
+      position: static;
+      height: auto;
+      max-height: none;
+      border-right: none;
+      border-bottom: 2px solid #1e4a20;
+      padding: 0.6rem 0.8rem 0.8rem;
+      /* Shrink to fit content only — no empty space */
+      flex-shrink: 0;
+      align-content: flex-start;
+      overflow: visible;
+    }
+    .nav-panel-title { margin-bottom: 0.25rem; }
+    .nav-legend { margin-bottom: 0.5rem; gap: 3px 10px; }
+    .quiz-content { width: 100%; padding: 0.8rem 0.8rem 2rem; }
+    .q-btn { width: calc(16.66% - 4px); aspect-ratio: 1/1; font-size: 0.82rem; }
   }
 
 </style>
@@ -438,7 +453,7 @@
   <div id="quiz-screen" style="display:none">
   <div class="quiz-layout">
   <div class="nav-panel" id="nav-panel"></div>
-  <div class="quiz-content">
+  <div class="quiz-content" id="quiz-content-anchor">
     <div class="question-card" id="question-card">
       <div class="question-number" id="q-number">CASO 1 DE 50</div>
       <span class="dimension-tag" id="dim-tag"></span>
@@ -1326,7 +1341,9 @@ function revealAnswer(selectedIdx) {
 }
 
 function nextQuestion() {
-  window.scrollTo({top: 0, behavior: "smooth"});
+  const qc = document.getElementById('quiz-content-anchor');
+  if (qc) { qc.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+  else { window.scrollTo({top: 0, behavior: 'smooth'}); }
   if (currentQ === shuffledQuestions.length - 1) showResults();
   else { currentQ++; renderQuestion(); }
 }
