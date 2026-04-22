@@ -341,12 +341,13 @@
       max-height: none;
       border-right: none;
       border-bottom: 2px solid #1e4a20;
-      padding: 0.6rem 0.8rem 0.8rem;
-      /* Shrink to fit content only — no empty space */
-      flex-shrink: 0;
+      padding: 0.6rem 0.8rem 0.7rem;
+      flex-direction: row;
+      flex-wrap: wrap;
       align-content: flex-start;
       overflow: visible;
     }
+    .q-btn { width: calc(16.66% - 5px); aspect-ratio: 1/1; font-size: 0.82rem; }
     .nav-panel-title { margin-bottom: 0.25rem; }
     .nav-legend { margin-bottom: 0.5rem; gap: 3px 10px; }
     .quiz-content { width: 100%; padding: 0.8rem 0.8rem 2rem; }
@@ -1342,11 +1343,15 @@ function revealAnswer(selectedIdx) {
 }
 
 function nextQuestion() {
-  const qc = document.getElementById('quiz-content-anchor');
-  if (qc) { qc.scrollIntoView({behavior: 'smooth', block: 'start'}); }
-  else { window.scrollTo({top: 0, behavior: 'smooth'}); }
-  if (currentQ === shuffledQuestions.length - 1) showResults();
-  else { currentQ++; renderQuestion(); }
+  if (currentQ === shuffledQuestions.length - 1) { showResults(); return; }
+  currentQ++;
+  renderQuestion();
+  // Scroll to question content after DOM update
+  setTimeout(function() {
+    const qc = document.getElementById('quiz-content-anchor');
+    if (qc) { qc.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+    else { window.scrollTo({top: 0, behavior: 'smooth'}); }
+  }, 60);
 }
 
 function prevQuestion() {
@@ -1686,15 +1691,6 @@ function buildNavPanel() {
   title.textContent = 'Casos';
   panel.appendChild(title);
 
-  // Leyenda
-  const legend = document.createElement('div');
-  legend.className = 'nav-legend';
-  legend.innerHTML = `
-    <span class="nav-legend-item"><span class="nav-legend-dot" style="background:#1a4a1a;border:1px solid #2ea96a"></span>Sin responder</span>
-    <span class="nav-legend-item"><span class="nav-legend-dot" style="background:#4caf50"></span>Respondida</span>
-    <span class="nav-legend-item"><span class="nav-legend-dot" style="background:#3a3a3a;box-shadow:0 0 0 2px #fff"></span>Actual</span>
-  `;
-  panel.appendChild(legend);
 
   // Botones
   for (let i = 0; i < shuffledQuestions.length; i++) {
